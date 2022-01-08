@@ -89,3 +89,21 @@ pub fn card_rank(card: Card) -> u8 {
         _ => unreachable!(),
     }
 }
+
+pub fn are_card_ranks_sequential(bottom: Card, top: Card) -> bool {
+    card_rank(bottom) == card_rank(top) - 1
+}
+
+pub fn are_card_colors_different(card1: Card, card2: Card) -> bool {
+    is_red(card1) != is_red(card2)
+}
+
+pub fn are_card_suits_the_same(card1: Card, card2: Card) -> bool {
+    let card_rank_1 = card_rank(card1);
+    let card_rank_2 = card_rank(card2);
+    card_rank_1.abs_diff(card_rank_2) <= 12 && !are_card_colors_different(card1, card2)
+}
+
+pub fn suit_rank(card: Card) -> u8 {
+    (card - CLUBS_KING).min(0) % CLUBS_KING
+}

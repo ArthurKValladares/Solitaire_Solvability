@@ -5,8 +5,9 @@ mod card;
 use card::*;
 use rand::{seq::SliceRandom, thread_rng};
 use std::fmt;
+use serde_derive::{Serialize, Deserialize};
 
-#[derive(Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 struct Game {
     tableaus: [Vec<Card>; 7],
     foundations: [Vec<Card>; 4],
@@ -29,25 +30,15 @@ impl Game {
         self.tableaus[4] = vec![self.stock[51 - 4], self.stock[51 - 10], self.stock[51 - 15], self.stock[51 - 19], self.stock[51 - 22]];
         self.tableaus[5] = vec![self.stock[51 - 5], self.stock[51 - 11], self.stock[51 - 16], self.stock[51 - 20], self.stock[51 - 23], self.stock[51 - 25]];
         self.tableaus[6] = vec![self.stock[51 - 6], self.stock[51 - 12], self.stock[51 - 17], self.stock[51 - 21], self.stock[51 - 24], self.stock[51 - 26], self.stock[51 - 27]];
-        self.stock.resize(51 - 28, 255);
+        self.stock.truncate(51 - 28);
     }
 
-    fn are_card_ranks_sequential(bottom: Card, top: Card) -> bool {
-        card_rank(bottom) == card_rank(top) - 1
-    }
-
-    fn are_card_colors_different(card1: Card, card2: Card) -> bool {
-        is_red(card1) != is_red(card2)
-    }
-
-    fn are_card_suits_the_same(card1: Card, card2: Card) -> bool {
-        let card_rank_1 = card_rank(card1);
-        let card_rank_2 = card_rank(card2);
-        card_rank_1.abs_diff(card_rank_2) <= 12 && !Self::are_card_colors_different(card1, card2)
-    }
+    //
+    // Logic Checks
+    //
 
     fn can_be_placed_on_top_of(bottom: Card, top: Card) -> bool {
-        Self::are_card_ranks_sequential(bottom, top) && Self::are_card_colors_different(bottom, top)
+        are_card_ranks_sequential(bottom, top) && are_card_colors_different(bottom, top)
     }
 
     fn can_move_card_to_tableau(&self, card: Card, tableau_idx: usize) -> bool {
@@ -59,13 +50,11 @@ impl Game {
     }
 
     fn can_move_card_to_foundation(&self, card: Card) -> bool {
-        self.foundations.iter().fold(true, |acc, foundation| {
-            acc | if let Some(top_foundation_card) = foundation.last() {
-                Self::are_card_ranks_sequential(*top_foundation_card, card) && Self::are_card_suits_the_same(*top_foundation_card, card)
-            } else {
-                card_rank(card) == 0
-            }
-        })
+        if let Some(top_foundation_card) = self.foundations[suit_rank(card) as usize].last() {
+            are_card_ranks_sequential(*top_foundation_card, card) && are_card_suits_the_same(*top_foundation_card, card)
+        } else {
+            card_rank(card) == 0
+        }
     }
 
     fn is_card_unlocked(&self, tableau_idx: usize, stack_idx: usize) -> bool {
@@ -85,6 +74,47 @@ impl Game {
     fn is_game_won(&self) -> bool {
         self.foundations.iter().fold(0, |acc, foundation| acc + foundation.len()) == 52
     }
+
+    fn can_draw_from_stock(&self, count: usize) -> bool {
+        self.stock.len() >= count
+    }
+
+    //
+    // Actions
+    //
+
+    fn restock(&mut self) {
+        self.waste.reverse();
+        std::mem::swap(&mut self.stock, &mut self.waste);
+    }
+
+    fn draw_from_stock(&mut self, count: usize) {
+        (0..count).for_each(|_| {
+            self.waste.push(self.stock.pop().expect("Popped empty stock"));
+        })
+    }
+
+    fn move_from_waste_to_foundation(&mut self) {
+        let card = self.waste.pop().expect("Popped empty waste");
+        self.foundations[suit_rank(card) as usize].push(card);
+    }
+
+    fn move_from_tableau_to_foundation(&mut self, tableau_idx: usize) {
+        let card =  self.tableaus[tableau_idx].pop().expect("Popped empty tableau");
+        self.foundations[suit_rank(card) as usize].push(card);
+    }
+
+    fn move_from_waste_to_tableau(&mut self, tableau_idx: usize) {
+        self.tableaus[tableau_idx].push(self.waste.pop().expect("Popped empty waste"))
+    }
+
+    fn move_stack_between_tableaus(&mut self, from_index: usize, to_index: usize, index_from_bottom: usize) {
+        let from_len = self.tableaus[from_index].len();
+        let start_index = from_len - (1 + index_from_bottom);
+        let drain_iter = self.tableaus[from_index].drain(start_index..).collect::<Vec<_>>();
+        self.tableaus[to_index].extend(drain_iter);
+        self.tableaus[from_index].truncate(start_index);
+    }
 }
 
 impl fmt::Display for Game {
@@ -94,14 +124,14 @@ impl fmt::Display for Game {
         writeln!(f)?;
         writeln!(f, "--------- Tableaus ------------")?;
         self.tableaus.iter().try_for_each(|tableau| {
-            tableau.iter().try_for_each(|card|  write!(f, "{}\t", format!("{:X}", card)))?;
+            tableau.iter().try_for_each(|card|  write!(f, "{:X}\t", card))?;
             writeln!(f)
         })?;        
         writeln!(f, "--------- Stock ---------------")?;
-        self.stock.iter().try_for_each(|card|  write!(f, "{} ", format!("{:X}", card)))?;
+        self.stock.iter().try_for_each(|card|  write!(f, "{:X} ", card))?;
         writeln!(f)?;
         writeln!(f, "--------- Waste ---------------")?;
-        self.waste.iter().try_for_each(|card|  write!(f, "{} ", format!("{:X}", card)))
+        self.waste.iter().try_for_each(|card|  write!(f, "{:X} ", card))
     }
 }
 
