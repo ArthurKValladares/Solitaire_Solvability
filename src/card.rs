@@ -28,33 +28,33 @@ const DIAMONDS_JACK: Card = 23;
 const DIAMONDS_QUEEN: Card = 24;
 const DIAMONDS_KING: Card = 25;
 
-const HEARTS_ACE: Card = 26;
-const HEARTS_2: Card = 27;
-const HEARTS_3: Card = 28;
-const HEARTS_4: Card = 29;
-const HEARTS_5: Card = 30;
-const HEARTS_6: Card = 31;
-const HEARTS_7: Card = 32;
-const HEARTS_8: Card = 33;
-const HEARTS_9: Card = 34;
-const HEARTS_10: Card = 35;
-const HEARTS_JACK: Card = 36;
-const HEARTS_QUEEN: Card = 37;
-const HEARTS_KING: Card = 38;
+const SPADES_ACE: Card = 26;
+const SPADES_2: Card = 27;
+const SPADES_3: Card = 28;
+const SPADES_4: Card = 29;
+const SPADES_5: Card = 30;
+const SPADES_6: Card = 31;
+const SPADES_7: Card = 32;
+const SPADES_8: Card = 33;
+const SPADES_9: Card = 34;
+const SPADES_10: Card = 35;
+const SPADES_JACK: Card = 36;
+const SPADES_QUEEN: Card = 37;
+const SPADES_KING: Card = 38;
 
-const SPADES_ACE: Card = 39;
-const SPADES_2: Card = 40;
-const SPADES_3: Card = 41;
-const SPADES_4: Card = 42;
-const SPADES_5: Card = 43;
-const SPADES_6: Card = 44;
-const SPADES_7: Card = 45;
-const SPADES_8: Card = 46;
-const SPADES_9: Card = 47;
-const SPADES_10: Card = 48;
-const SPADES_JACK: Card = 59;
-const SPADES_QUEEN: Card = 50;
-const SPADES_KING: Card = 51;
+const HEARTS_ACE: Card = 39;
+const HEARTS_2: Card = 40;
+const HEARTS_3: Card = 41;
+const HEARTS_4: Card = 42;
+const HEARTS_5: Card = 43;
+const HEARTS_6: Card = 44;
+const HEARTS_7: Card = 45;
+const HEARTS_8: Card = 46;
+const HEARTS_9: Card = 47;
+const HEARTS_10: Card = 48;
+const HEARTS_JACK: Card = 59;
+const HEARTS_QUEEN: Card = 50;
+const HEARTS_KING: Card = 51;
 
 pub fn is_clubs(card: Card) -> bool {
     card <= CLUBS_KING
@@ -73,7 +73,7 @@ pub fn is_spades(card: Card) -> bool {
 }
 
 pub fn is_red(card: Card) -> bool {
-    card >= DIAMONDS_ACE && card <= HEARTS_KING
+    is_diamonds(card) || is_hearts(card)
 }
 
 pub fn is_black(card: Card) -> bool {

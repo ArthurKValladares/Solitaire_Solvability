@@ -1,3 +1,5 @@
+#![feature(int_abs_diff)]
+
 mod card;
 
 use card::*;
@@ -30,17 +32,40 @@ impl Game {
         self.stock.resize(51 - 28, 255);
     }
 
+    fn are_card_ranks_sequential(bottom: Card, top: Card) -> bool {
+        card_rank(bottom) == card_rank(top) - 1
+    }
+
+    fn are_card_colors_different(card1: Card, card2: Card) -> bool {
+        is_red(card1) != is_red(card2)
+    }
+
+    fn are_card_suits_the_same(card1: Card, card2: Card) -> bool {
+        let card_rank_1 = card_rank(card1);
+        let card_rank_2 = card_rank(card2);
+        card_rank_1.abs_diff(card_rank_2) <= 12 && !Self::are_card_colors_different(card1, card2)
+    }
+
     fn can_be_placed_on_top_of(bottom: Card, top: Card) -> bool {
-        card_rank(bottom) == card_rank(top) - 1 && is_red(bottom) != is_red(top)
+        Self::are_card_ranks_sequential(bottom, top) && Self::are_card_colors_different(bottom, top)
     }
 
     fn can_move_card_to_tableau(&self, card: Card, tableau_idx: usize) -> bool {
-        let top_tableau_card = self.tableaus[tableau_idx].last();
-        if let Some(top_tableau_card) = top_tableau_card {
+        if let Some(top_tableau_card) = self.tableaus[tableau_idx].last() {
             Self::can_be_placed_on_top_of(*top_tableau_card, card)
         } else {
             false
         }
+    }
+
+    fn can_move_card_to_foundation(&self, card: Card) -> bool {
+        self.foundations.iter().fold(true, |acc, foundation| {
+            if let Some(top_foundation_card) = foundation.last() {
+                Self::are_card_ranks_sequential(*top_foundation_card, card) && Self::are_card_suits_the_same(*top_foundation_card, card)
+            } else {
+                card_rank(card) == 0
+            }
+        })
     }
 
     fn is_card_unlocked(&self, tableau_idx: usize, stack_idx: usize) -> bool {
