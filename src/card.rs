@@ -79,3 +79,13 @@ pub fn is_red(card: Card) -> bool {
 pub fn is_black(card: Card) -> bool {
     !is_red(card)
 }
+
+pub fn card_rank(card: Card) -> u8 {
+    match card {
+        CLUBS_ACE..=CLUBS_KING => card - CLUBS_ACE,
+        DIAMONDS_ACE..=DIAMONDS_KING => card - DIAMONDS_ACE,
+        HEARTS_ACE..=HEARTS_KING => card - HEARTS_ACE,
+        SPADES_ACE..=SPADES_KING => card - SPADES_ACE,
+        _ => unreachable!(),
+    }
+}

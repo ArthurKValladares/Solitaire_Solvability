@@ -13,13 +13,13 @@ struct Game {
 }
 
 impl Game {
-    pub fn set_stock(&mut self) {
+    fn set_stock(&mut self) {
         self.stock = (0..52).collect::<Vec<Card>>();
         self.stock.shuffle(&mut thread_rng());
     }
 
     #[rustfmt::skip]
-    pub fn initial_deal(&mut self) {   
+    fn initial_deal(&mut self) {   
         self.tableaus[0] = vec![self.stock[51]];
         self.tableaus[1] = vec![self.stock[51 - 1], self.stock[51 - 7]];
         self.tableaus[2] = vec![self.stock[51 - 2], self.stock[51 - 8], self.stock[51 - 12]];
@@ -28,6 +28,37 @@ impl Game {
         self.tableaus[5] = vec![self.stock[51 - 5], self.stock[51 - 11], self.stock[51 - 16], self.stock[51 - 20], self.stock[51 - 23], self.stock[51 - 25]];
         self.tableaus[6] = vec![self.stock[51 - 6], self.stock[51 - 12], self.stock[51 - 17], self.stock[51 - 21], self.stock[51 - 24], self.stock[51 - 26], self.stock[51 - 27]];
         self.stock.resize(51 - 28, 255);
+    }
+
+    fn can_be_placed_on_top_of(bottom: Card, top: Card) -> bool {
+        card_rank(bottom) == card_rank(top) - 1 && is_red(bottom) != is_red(top)
+    }
+
+    fn can_move_card_to_tableau(&self, card: Card, tableau_idx: usize) -> bool {
+        let top_tableau_card = self.tableaus[tableau_idx].last();
+        if let Some(top_tableau_card) = top_tableau_card {
+            Self::can_be_placed_on_top_of(*top_tableau_card, card)
+        } else {
+            false
+        }
+    }
+
+    fn is_card_unlocked(&self, tableau_idx: usize, stack_idx: usize) -> bool {
+        if stack_idx == self.tableaus[tableau_idx].len() - 1 {
+            true
+        } else {
+            self.tableaus[tableau_idx][tableau_idx..].iter().fold((true, None), |(result, prev_card) : (bool, Option<&Card>), card| {
+                (result | if let Some(prev_card) = prev_card {
+                    Self::can_be_placed_on_top_of(*prev_card, *card)
+                } else {
+                    true
+                }, Some(card))
+            }).0
+        }
+    }
+
+    fn is_game_won(&self) -> bool {
+        self.foundations.iter().fold(0, |acc, foundation| acc + foundation.len()) == 52
     }
 }
 
