@@ -60,7 +60,7 @@ impl Game {
 
     fn can_move_card_to_foundation(&self, card: Card) -> bool {
         self.foundations.iter().fold(true, |acc, foundation| {
-            if let Some(top_foundation_card) = foundation.last() {
+            acc | if let Some(top_foundation_card) = foundation.last() {
                 Self::are_card_ranks_sequential(*top_foundation_card, card) && Self::are_card_suits_the_same(*top_foundation_card, card)
             } else {
                 card_rank(card) == 0
