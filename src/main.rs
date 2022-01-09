@@ -12,17 +12,34 @@ enum CardPosition {
     Stock,
     Waste,
     Foundation(u8),
-    // tableau_idx, vector_idx
+    // tableau_idx, card_idx
     Tableau((u8, u8))
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Hash, PartialEq, Eq)]
 struct Move {
     from: CardPosition,
     to: CardPosition
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+impl Move {
+    fn pretty_string(&self, game: &Game) -> String {
+        let from_card = match self.from {
+            CardPosition::Stock => game.stock.last().unwrap(),
+            CardPosition::Waste => game.waste.last().unwrap(),
+            CardPosition::Foundation(idx) => game.foundations[idx as usize].last().unwrap(),
+            CardPosition::Tableau((tableau_idx, card_idx)) => &game.tableaus[tableau_idx as usize][card_idx as usize],
+        };
+        let to_card = match self.to {
+            CardPosition::Stock => game.stock.last(),
+            CardPosition::Waste => game.waste.last(),
+            CardPosition::Foundation(idx) => game.foundations[idx as usize].last(),
+            CardPosition::Tableau((tableau_idx, _)) => game.tableaus[tableau_idx as usize].last(),
+        };
+        format!("From: {:?} - {}\tTo: {:?} - {}", self.from,  pretty_string(*from_card), self.to, to_card.map_or_else(|| " ".to_string(), |card| pretty_string(*card)))
+    }
+}
+#[derive(Serialize, Deserialize, Default)]
 struct Game {
     tableaus: [Vec<Card>; 7],
     foundations: [Vec<Card>; 4],
@@ -228,18 +245,19 @@ impl fmt::Display for Game {
         self.foundations.iter().try_for_each(|foundation|  write!(f, "[{}]\t", foundation.last().map_or_else(|| " ".to_string(), |u| format!("{:X}", u))))?;
         writeln!(f)?;
         writeln!(f, "--------- Tableaus ------------")?;
-        self.tableaus.iter().try_for_each(|tableau| {
-            tableau.iter().try_for_each(|card|  write!(f, "{:X}\t", card))?;
+        self.tableaus.iter().enumerate().try_for_each(|(idx, tableau)| {
+            write!(f, "{}:\t", idx)?;
+            tableau.iter().try_for_each(|card|  write!(f, "{}\t", pretty_string(*card)))?;
             writeln!(f)
         })?;        
         writeln!(f, "--------- Stock ---------------")?;
-        self.stock.iter().try_for_each(|card|  write!(f, "{:X} ", card))?;
+        self.stock.iter().try_for_each(|card|  write!(f, "{} ", pretty_string(*card)))?;
         writeln!(f)?;
         writeln!(f, "--------- Waste ---------------")?;
-        self.waste.iter().try_for_each(|card|  write!(f, "{:X} ", card))?;
+        self.waste.iter().try_for_each(|card|  write!(f, "{} ", pretty_string(*card)))?;
         writeln!(f, "--------- Valid Moves ---------")?;
         self.valid_moves.iter().try_for_each(|mv| {
-            writeln!(f, "{:?}", mv)
+            writeln!(f, "{}", mv.pretty_string(self))
         })    
     }
 }

@@ -1,3 +1,5 @@
+use colored::*;
+
 pub type Card = u8;
 
 const CLUBS_ACE: Card = 0;
@@ -52,7 +54,7 @@ const HEARTS_7: Card = 45;
 const HEARTS_8: Card = 46;
 const HEARTS_9: Card = 47;
 const HEARTS_10: Card = 48;
-const HEARTS_JACK: Card = 59;
+const HEARTS_JACK: Card = 49;
 const HEARTS_QUEEN: Card = 50;
 const HEARTS_KING: Card = 51;
 
@@ -76,7 +78,7 @@ pub fn is_red(card: Card) -> bool {
     is_diamonds(card) || is_hearts(card)
 }
 
-pub fn is_black(card: Card) -> bool {
+pub fn is_yellow(card: Card) -> bool {
     !is_red(card)
 }
 
@@ -106,4 +108,38 @@ pub fn are_card_suits_the_same(card1: Card, card2: Card) -> bool {
 
 pub fn suit_rank(card: Card) -> u8 {
     card.abs_diff(CLUBS_KING).min(0) % CLUBS_KING
+}
+
+pub fn pretty_string(card: Card) -> String {
+    let suit_rank = suit_rank(card);
+    let card_rank = card_rank(card);
+    let suit_string = match suit_rank {
+        0 => "C",
+        1 => "D",
+        2 => "S",
+        3 => "H",
+        _ => unreachable!(),
+    };
+    let rank_string = match card_rank {
+        0 => "A",
+        1 => "2",
+        2 => "3",
+        3 => "4",
+        4 => "5",
+        5 => "6",
+        6 => "7",
+        7 => "8",
+        8 => "9",
+        9 => "10",
+        10 => "J",
+        11 => "Q",
+        12 => "K",
+        _ => unreachable!(),
+    };
+    let ret_string = format!("{}{}", suit_string, rank_string);
+    if is_red(card) {
+        ret_string.red().to_string()
+    } else {
+        ret_string.yellow().to_string()
+    }
 }
