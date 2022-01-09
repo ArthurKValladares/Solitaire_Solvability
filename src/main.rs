@@ -7,7 +7,6 @@ use card::*;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{collections::HashSet, fmt};
 use derivative::Derivative;
-use arrayvec::ArrayVec;
 
 #[derive(Debug, Hash, PartialEq, Eq)]
 enum CardPosition {
