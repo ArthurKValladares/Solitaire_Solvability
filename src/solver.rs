@@ -1,11 +1,34 @@
-use super::Game;
-use std::collections::HashSet;
+use super::{CardPosition, Game, Move};
+use std::{
+    cmp::Ordering,
+    collections::{BinaryHeap, HashSet},
+};
 
 pub struct Solver {
     original_game: Game,
     visited_games_states: HashSet<Game>,
-    states_to_visit: Vec<Game>,
+    states_to_visit: BinaryHeap<Game>,
     visited_states: Vec<Game>,
+}
+
+impl Game {
+    pub fn score(&self) -> usize {
+        self.foundations
+            .iter()
+            .fold(0, |acc, foundation| acc + foundation.len())
+    }
+}
+
+impl PartialOrd for Game {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.score().cmp(&other.score()))
+    }
+}
+
+impl Ord for Game {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.score().cmp(&other.score())
+    }
 }
 
 impl Solver {
@@ -13,7 +36,7 @@ impl Solver {
         let original_game = Game::new();
         let mut visited_games_states = HashSet::new();
         visited_games_states.insert(original_game.clone());
-        let mut states_to_visit = Vec::new();
+        let mut states_to_visit = BinaryHeap::new();
         let valid_moves = original_game.valid_moves();
         for valid_move in &valid_moves {
             states_to_visit.push(original_game.handle_move(valid_move));
