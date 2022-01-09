@@ -1,14 +1,15 @@
 #![feature(int_abs_diff)]
 
 mod card;
+mod solver;
 
 use card::*;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{collections::HashSet, fmt};
-use serde_derive::{Serialize, Deserialize};
 use derivative::Derivative;
+use arrayvec::ArrayVec;
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 enum CardPosition {
     Stock,
     Waste,
@@ -17,7 +18,7 @@ enum CardPosition {
     Tableau((u8, u8))
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 struct Move {
     from: CardPosition,
     to: CardPosition
@@ -40,7 +41,7 @@ impl Move {
         format!("From: {:?} - {}\tTo: {:?} - {}", self.from,  pretty_string(*from_card), self.to, to_card.map_or_else(|| " ".to_string(), |card| pretty_string(*card)))
     }
 }
-#[derive(Serialize, Deserialize, Default, Debug, Derivative)]
+#[derive(Default, Debug, Derivative)]
 #[derivative(Hash, PartialEq, Eq)]
 struct Game {
     tableaus: [Vec<Card>; 7],
@@ -54,7 +55,7 @@ struct Game {
 
 impl Game {
     fn set_stock(&mut self) {
-        self.stock = (0..52).collect::<Vec<Card>>();
+        self.stock = (0..NUM_CARDS_DECK).collect::<Vec<Card>>();
         self.stock.shuffle(&mut thread_rng());
     }
 
@@ -205,6 +206,7 @@ impl Game {
     fn is_game_lost(&self) -> bool {
         self.valid_moves.is_empty()
     }
+
     //
     // Actions
     //

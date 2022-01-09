@@ -1,5 +1,8 @@
 use colored::*;
 
+pub const NUM_CARDS_DECK: u8 = 52;
+pub const NUM_CARDS_SUIT: u8 = 13;
+
 pub type Card = u8;
 
 const CLUBS_ACE: Card = 0;
