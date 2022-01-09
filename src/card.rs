@@ -110,7 +110,7 @@ pub fn are_card_suits_the_same(card1: Card, card2: Card) -> bool {
 }
 
 pub fn suit_rank(card: Card) -> u8 {
-    card.abs_diff(CLUBS_KING).min(0) % CLUBS_KING
+    card / NUM_CARDS_SUIT
 }
 
 pub fn pretty_string(card: Card) -> String {

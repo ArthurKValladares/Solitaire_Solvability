@@ -3,6 +3,7 @@
 mod card;
 mod solver;
 
+use solver::*;
 use card::*;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{collections::HashSet, fmt};
@@ -40,14 +41,22 @@ impl Move {
     }
 }
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
-struct Game {
+pub struct Game {
     tableaus: [Vec<Card>; 7],
     foundations: [Vec<Card>; 4],
     stock: Vec<Card>,
     waste: Vec<Card>,
+    num_restocks: u8,
 }
 
 impl Game {
+    fn new() -> Self {
+        let mut game = Game::default();
+        game.set_stock();
+        game.initial_deal();
+        game
+    }
+
     fn set_stock(&mut self) {
         self.stock = (0..NUM_CARDS_DECK).collect::<Vec<Card>>();
         self.stock.shuffle(&mut thread_rng());
@@ -80,6 +89,14 @@ impl Game {
                 from: CardPosition::Stock,
                 to: CardPosition::Waste
             });
+        } else {
+            // Restock
+            if self.num_restocks < 3 {
+                valid_moves.insert(Move{
+                    from: CardPosition::Waste,
+                    to: CardPosition::Stock
+                });
+            }
         }
 
         // Valid moves from waste
@@ -104,22 +121,6 @@ impl Game {
                 }
             });
         }
-
-        // Valid moves from foundations
-        self.foundations.iter().enumerate().for_each(|(foundation_idx, foundation)| {
-            if let Some(foundation_card) = foundation.last() {
-                self.tableaus.iter().enumerate().for_each(|(tableau_idx, tableau)| {
-                    if let Some(tableau_card) = tableau.last() {
-                        if Self::can_be_placed_on_top_of(*tableau_card, *foundation_card) {
-                            valid_moves.insert(Move{
-                                from: CardPosition::Foundation(foundation_idx as u8),
-                                to: CardPosition::Tableau((tableau_idx as u8, self.tableaus[tableau_idx].len() as u8))
-                            });
-                        }
-                    }
-                });
-            }
-        });
 
         // Valid moves from tableau
         for (from_tableau_idx, from_tableau) in self.tableaus.iter().enumerate() {
@@ -203,6 +204,9 @@ impl Game {
         self.valid_moves().is_empty()
     }
 
+    fn is_game_won(&self) -> bool {
+        self.foundations.iter().fold(0, |acc, foundation|  acc + foundation.len()) == NUM_CARDS_DECK.into()
+    }
     //
     // Actions
     //
@@ -211,14 +215,20 @@ impl Game {
             from,
             to,
         } = mv;
-        match (to, from) {
+        match (from, to) {
             (CardPosition::Stock, CardPosition::Waste) => self.draw_from_stock(1),
-            _ => unreachable!()
+            (CardPosition::Waste, CardPosition::Stock) => self.restock(),
+            (CardPosition::Waste, CardPosition::Foundation(_)) => self.move_from_waste_to_foundation(),
+            (CardPosition::Waste, CardPosition::Tableau((tableau_idx, _))) => self.move_from_waste_to_tableau(*tableau_idx),
+            (CardPosition::Tableau((tableau_idx, _)), CardPosition::Foundation(_)) => self.move_from_tableau_to_foundation(*tableau_idx),
+            (CardPosition::Tableau((from_tableau_idx, card_idx)), CardPosition::Tableau((to_tableau_idx, _))) => self.move_stack_between_tableaus(*from_tableau_idx, *card_idx, *to_tableau_idx),
+            _ => panic!("{:?}", mv)
         }
     }
 
     fn restock(&self) -> Self {
         let mut new_game = self.clone();
+        new_game.num_restocks += 1;
         new_game.waste.reverse();
         std::mem::swap(&mut new_game.stock, &mut new_game.waste);
         new_game
@@ -239,26 +249,24 @@ impl Game {
         new_game
     }
 
-    fn move_from_tableau_to_foundation(&self, tableau_idx: usize) -> Self {
+    fn move_from_tableau_to_foundation(&self, tableau_idx: u8) -> Self {
         let mut new_game = self.clone();
-        let card =  new_game.tableaus[tableau_idx].pop().expect("Popped empty tableau");
+        let card =  new_game.tableaus[tableau_idx as usize].pop().expect("Popped empty tableau");
         new_game.foundations[suit_rank(card) as usize].push(card);
         new_game
     }
 
-    fn move_from_waste_to_tableau(&self, tableau_idx: usize) -> Self {
+    fn move_from_waste_to_tableau(&self, tableau_idx: u8) -> Self {
         let mut new_game = self.clone();
-        new_game.tableaus[tableau_idx].push(new_game.waste.pop().expect("Popped empty waste"));
+        new_game.tableaus[tableau_idx as usize].push(new_game.waste.pop().expect("Popped empty waste"));
         new_game
     }
 
-    fn move_stack_between_tableaus(&self, from_index: usize, to_index: usize, index_from_bottom: usize) -> Self {
+    fn move_stack_between_tableaus(&self, from_index: u8, card_idx: u8, to_index: u8) -> Self {
         let mut new_game = self.clone();
-        let from_len = new_game.tableaus[from_index].len();
-        let start_index = from_len - (1 + index_from_bottom);
-        let drain_iter = new_game.tableaus[from_index].drain(start_index..).collect::<Vec<_>>();
-        new_game.tableaus[to_index].extend(drain_iter);
-        new_game.tableaus[from_index].truncate(start_index);
+        let drain_iter = new_game.tableaus[from_index as usize].drain((card_idx as usize)..).collect::<Vec<_>>();
+        new_game.tableaus[to_index as usize].extend(drain_iter);
+        new_game.tableaus[from_index as usize].truncate(card_idx as usize);
         new_game
     }
 }
@@ -266,7 +274,7 @@ impl Game {
 impl fmt::Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "\n--------- Foundations ---------")?;
-        self.foundations.iter().try_for_each(|foundation|  write!(f, "[{}]\t", foundation.last().map_or_else(|| " ".to_string(), |u| format!("{:X}", u))))?;
+        self.foundations.iter().try_for_each(|foundation|  write!(f, "[{}]\t", foundation.last().map_or_else(|| " ".to_string(), |card| pretty_string(*card))))?;
         writeln!(f)?;
         writeln!(f, "--------- Tableaus ------------")?;
         self.tableaus.iter().enumerate().try_for_each(|(idx, tableau)| {
@@ -279,6 +287,7 @@ impl fmt::Display for Game {
         writeln!(f)?;
         writeln!(f, "--------- Waste ---------------")?;
         self.waste.iter().try_for_each(|card|  write!(f, "{} ", pretty_string(*card)))?;
+        writeln!(f)?;
         writeln!(f, "--------- Valid Moves ---------")?;
         self.valid_moves().iter().try_for_each(|mv| {
             writeln!(f, "{}", mv.pretty_string(self))
@@ -287,8 +296,6 @@ impl fmt::Display for Game {
 }
 
 fn main() {
-    let mut game = Game::default();
-    game.set_stock();
-    game.initial_deal();
-    println!("Game: {}", game);
+    let mut solver = Solver::new();
+    println!("Game: {:?}", solver.is_solvable());
 }
