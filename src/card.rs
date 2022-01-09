@@ -91,7 +91,7 @@ pub fn card_rank(card: Card) -> u8 {
 }
 
 pub fn are_card_ranks_sequential(bottom: Card, top: Card) -> bool {
-    card_rank(bottom) == card_rank(top) - 1
+    card_rank(top) != 0 && card_rank(bottom) == (card_rank(top) - 1)
 }
 
 pub fn are_card_colors_different(card1: Card, card2: Card) -> bool {
@@ -105,5 +105,5 @@ pub fn are_card_suits_the_same(card1: Card, card2: Card) -> bool {
 }
 
 pub fn suit_rank(card: Card) -> u8 {
-    (card - CLUBS_KING).min(0) % CLUBS_KING
+    card.abs_diff(CLUBS_KING).min(0) % CLUBS_KING
 }
