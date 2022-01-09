@@ -118,6 +118,11 @@ impl Game {
                             to: CardPosition::Tableau((tableau_idx as u8, self.tableaus[tableau_idx].len() as u8))
                         });
                     }
+                } else if is_king(*card) {
+                    valid_moves.insert(Move{
+                        from: CardPosition::Waste,
+                        to: CardPosition::Tableau((tableau_idx as u8, self.tableaus[tableau_idx].len() as u8))
+                    });
                 }
             });
         }
@@ -146,6 +151,11 @@ impl Game {
                                         to: CardPosition::Tableau((to_tableau_idx as u8, self.tableaus[to_tableau_idx].len() as u8))
                                     });
                                 }
+                            } else if is_king(*card) {
+                                valid_moves.insert(Move{
+                                    from: CardPosition::Tableau((from_tableau_idx as u8, card_idx as u8)),
+                                        to: CardPosition::Tableau((to_tableau_idx as u8, self.tableaus[to_tableau_idx].len() as u8))
+                                });
                             }
                         }
                     });

@@ -113,6 +113,10 @@ pub fn suit_rank(card: Card) -> u8 {
     card / NUM_CARDS_SUIT
 }
 
+pub fn is_king(card: Card) -> bool {
+    card % 13 == 12
+}
+
 pub fn pretty_string(card: Card) -> String {
     let suit_rank = suit_rank(card);
     let card_rank = card_rank(card);

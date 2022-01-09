@@ -1,0 +1,15 @@
+--------- Foundations ---------
+[CA]    [DA]    [SA]    [HA]
+--------- Tableaus ------------
+0:
+1:      S9      D10     SJ
+2:
+3:      D5      C6      H7
+6:      D3      HA      D2      DK      CJ      HQ      CK
+--------- Stock ---------------
+--------- Waste ---------------
+C7 DJ C9 D4 S3 S7 S4 H3 D9 HJ H8 D8 H6 H4 D6
+--------- Valid Moves ---------
+From: Tableau((4, 8)) - S8      To: Tableau((3, 3)) - H7
+From: Tableau((6, 5)) - HQ      To: Tableau((1, 3)) - SJ
+From: Stock - CQ        To: Waste - D6
