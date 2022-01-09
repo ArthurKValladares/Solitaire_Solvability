@@ -6,6 +6,7 @@ use card::*;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{collections::HashSet, fmt};
 use serde_derive::{Serialize, Deserialize};
+use derivative::Derivative;
 
 #[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 enum CardPosition {
@@ -16,7 +17,7 @@ enum CardPosition {
     Tableau((u8, u8))
 }
 
-#[derive(Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 struct Move {
     from: CardPosition,
     to: CardPosition
@@ -39,12 +40,15 @@ impl Move {
         format!("From: {:?} - {}\tTo: {:?} - {}", self.from,  pretty_string(*from_card), self.to, to_card.map_or_else(|| " ".to_string(), |card| pretty_string(*card)))
     }
 }
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug, Derivative)]
+#[derivative(Hash, PartialEq, Eq)]
 struct Game {
     tableaus: [Vec<Card>; 7],
     foundations: [Vec<Card>; 4],
     stock: Vec<Card>,
     waste: Vec<Card>,
+    #[derivative(PartialEq="ignore")]
+    #[derivative(Hash="ignore")]
     valid_moves: HashSet<Move>,
 }
 
