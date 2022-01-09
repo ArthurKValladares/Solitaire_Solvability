@@ -180,12 +180,12 @@ impl Game {
         }
     }
 
-    fn is_card_unlocked(&self, tableau_idx: usize, stack_idx: usize) -> bool {
-        if stack_idx == self.tableaus[tableau_idx].len() - 1 {
+    fn is_card_unlocked(&self, tableau_idx: usize, card_idx: usize) -> bool {
+        if card_idx == self.tableaus[tableau_idx].len() - 1 {
             true
         } else {
-            self.tableaus[tableau_idx][stack_idx..].iter().fold((true, None), |(result, prev_card) : (bool, Option<&Card>), card| {
-                (result | if let Some(prev_card) = prev_card {
+            self.tableaus[tableau_idx][card_idx..].iter().fold((true, None), |(result, prev_card) : (bool, Option<&Card>), card| {
+                (result && if let Some(prev_card) = prev_card {
                     Self::can_be_placed_on_top_of(*prev_card, *card)
                 } else {
                     true
