@@ -1,17 +1,31 @@
 use super::Game;
+use std::collections::HashSet;
 
 pub struct Solver {
     original_game: Game,
-    // TODO: Will need a set of "game states" that have already been visited, so that we never visit the same node twice.
-    // We need a efficient way to save each game state that is not just saving the entire game state, since that will be memory intensive.
-    // Might just be as simple as saving all moves made from the starting state.
-    // Would be easy to reconstruct, but is that really cheaper than saving the entire state?
+    visited_games_states: HashSet<Game>,
+    states_to_visit: Vec<Game>,
 }
 
 impl Solver {
     pub fn new() -> Self {
-        Self {
-            original_game: Game::default(),
+        let mut original_game = Game::default();
+        original_game.initial_deal();
+        let mut visited_games_states = HashSet::new();
+        visited_games_states.insert(original_game.clone());
+        let mut states_to_visit = Vec::new();
+        let valid_moves = original_game.valid_moves();
+        for valid_move in &valid_moves {
+            states_to_visit.push(original_game.handle_move(valid_move));
         }
+        Self {
+            original_game,
+            visited_games_states,
+            states_to_visit,
+        }
+    }
+
+    pub fn is_solvable(&self) -> bool {
+        false
     }
 }
