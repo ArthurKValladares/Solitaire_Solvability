@@ -12,9 +12,12 @@ pub struct Solver {
 
 impl Game {
     pub fn score(&self) -> usize {
+        /*
         self.foundations
             .iter()
             .fold(0, |acc, foundation| acc + foundation.unwrap_or(0) as usize)
+            */
+        0
     }
 }
 

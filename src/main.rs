@@ -11,7 +11,7 @@ use rand::{seq::SliceRandom, thread_rng};
 use solver::*;
 use std::{cmp::Ordering, fmt, time::Instant};
 
-const VERBOSE_PRINT: bool = false;
+const VERBOSE_PRINT: bool = true;
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct CardStack<const CAP: usize>(ArrayVec<Card, CAP>);
@@ -34,7 +34,6 @@ impl<const CAP: usize> Ord for CardStack<CAP> {
     }
 }
 
-// TODO: Make sure this is all stack-allocated, and uses as few bytes as possible
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Game {
     // TODO: We can optimize this further
@@ -156,23 +155,9 @@ impl Game {
         if card_idx == self.tableaus[tableau_idx].0.len() - 1 {
             true
         } else {
-            self.tableaus[tableau_idx].0[card_idx..]
-                .iter()
-                .fold(
-                    (true, None),
-                    |(result, prev_card): (bool, Option<&Card>), card| {
-                        (
-                            result
-                                && if let Some(prev_card) = prev_card {
-                                    Self::can_be_placed_on_top_of(*prev_card, *card)
-                                } else {
-                                    true
-                                },
-                            Some(card),
-                        )
-                    },
-                )
-                .0
+            let card = self.tableaus[tableau_idx].0[card_idx];
+            let card_above = self.tableaus[tableau_idx].0[card_idx + 1];
+            Self::can_be_placed_on_top_of(card, card_above)
         }
     }
 

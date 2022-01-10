@@ -146,13 +146,13 @@ impl Game {
 
     fn get_tableau_moves_from_tableau(&self, from_tableau_idx: usize) -> HashSet<Move> {
         let mut set = HashSet::new();
-        // TODO: Cache cards that are unlocked? YES, DO THAT
+        // TODO: Cache cards that are unlocked?
         for (card_idx, _) in self.tableaus[from_tableau_idx].0.iter().enumerate().rev() {
             if self.is_card_unlocked(from_tableau_idx, card_idx) {
                 self.tableaus
                     .iter()
                     .enumerate()
-                    .for_each(|(to_tableau_idx, to_tableau)| {
+                    .for_each(|(to_tableau_idx, _)| {
                         if from_tableau_idx != to_tableau_idx {
                             if let Some(mv) = self.get_specific_move_between_tableaus(
                                 from_tableau_idx,
@@ -215,7 +215,7 @@ impl Game {
 
     fn get_moves_from_tableau(&self) -> HashSet<Move> {
         let mut set = HashSet::new();
-        for (from_tableau_idx, from_tableau) in self.tableaus.iter().enumerate() {
+        for (from_tableau_idx, _) in self.tableaus.iter().enumerate() {
             if let Some(mv) = self.get_move_from_tableau_to_foundation(from_tableau_idx) {
                 set.insert(mv);
             }
@@ -284,3 +284,7 @@ impl Game {
         valid_moves
     }
 }
+
+// TODO: forbid
+// the move of only part of a built pile, if the card above the partial pile cannot at this point be moved
+// to foundation

@@ -1,15 +1,35 @@
+Current State:
+
 --------- Foundations ---------
-[CA]    [DA]    [SA]    [HA]
+[CA]    [ ]     [SA]    [H4]
 --------- Tableaus ------------
-0:
-1:      S9      D10     SJ
-2:
-3:      D5      C6      H7
-6:      D3      HA      D2      DK      CJ      HQ      CK
+0:      CJ      C2      SK      SQ      HK
+1:      D3      S6      S9
+2:      D6      D2      C5      S8      D4      S5
+3:      S2      C9      HQ      C4      H9      S10     DJ      CQ      DK
+4:      H6      C7
+5:      H8      S9      DQ      DA      H5      D8      S4      D5      C6      D7      C8
+6:
 --------- Stock ---------------
+H7
 --------- Waste ---------------
-C7 DJ C9 D4 S3 S7 S4 H3 D9 HJ H8 D8 H6 H4 D6
---------- Valid Moves ---------
-From: Tableau((4, 8)) - S8      To: Tableau((3, 3)) - H7
-From: Tableau((6, 5)) - HQ      To: Tableau((1, 3)) - SJ
-From: Stock - CQ        To: Waste - D6
+SJ HJ S3 D10 C3 D9 CK C10 H10
+
+
+
+Current State:
+
+--------- Foundations ---------
+[ ]     [ ]     [SA]    [H4]
+--------- Tableaus ------------
+0:      CJ      C2      SK      SQ
+1:      D3      S6      S9      D10
+2:      D6      D2      C5      S8      D4      S5      H6      C7
+3:      S2      C9      HQ      C4      D5      C6      H7      C8      H9      S10     DJ      CQ      DK
+4:      H8      S9      DQ      DA      H5      D8      S4
+5:      HK
+6:
+--------- Stock ---------------
+H10
+--------- Waste ---------------
+SJ HJ CA S3 D7 C3 D9 CK C10
