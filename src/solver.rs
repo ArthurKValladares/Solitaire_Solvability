@@ -12,12 +12,9 @@ pub struct Solver {
 
 impl Game {
     pub fn score(&self) -> usize {
-        /*
         self.foundations
             .iter()
             .fold(0, |acc, foundation| acc + foundation.unwrap_or(0) as usize)
-            */
-        0
     }
 }
 
@@ -57,9 +54,9 @@ impl Solver {
         while !self.states_to_visit.is_empty() {
             iter += 1;
             let new_state = self.states_to_visit.pop().unwrap();
-            if iter % 100000 == 0 {
-                println!("\nCurrent State:\n{}", new_state);
-            }
+            //if iter % 100000 == 0 {
+            println!("\nCurrent State:\n{}", new_state);
+            //}
             if new_state.is_game_won() {
                 return Some(new_state);
             }

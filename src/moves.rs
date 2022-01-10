@@ -146,9 +146,9 @@ impl Game {
 
     fn get_tableau_moves_from_tableau(&self, from_tableau_idx: usize) -> HashSet<Move> {
         let mut set = HashSet::new();
-        // TODO: Cache cards that are unlocked?
-        for (card_idx, _) in self.tableaus[from_tableau_idx].0.iter().enumerate().rev() {
-            if self.is_card_unlocked(from_tableau_idx, card_idx) {
+        // Check first unlocked card
+        if let Some(first_unlocked_idx) = self.first_unlocked_idx[from_tableau_idx] {
+            if self.is_card_unlocked(from_tableau_idx, first_unlocked_idx as usize) {
                 self.tableaus
                     .iter()
                     .enumerate()
@@ -156,15 +156,34 @@ impl Game {
                         if from_tableau_idx != to_tableau_idx {
                             if let Some(mv) = self.get_specific_move_between_tableaus(
                                 from_tableau_idx,
-                                card_idx,
+                                first_unlocked_idx as usize,
                                 to_tableau_idx,
                             ) {
                                 set.insert(mv);
                             }
                         }
                     });
-            } else {
-                break;
+            }
+
+            // Check rest of the stack, only if it opens a card that can move to a foundation
+            for index in (first_unlocked_idx as usize + 1)..self.tableaus[from_tableau_idx].0.len()
+            {
+                if self.can_move_card_to_foundation(self.tableaus[from_tableau_idx].0[index - 1]) {
+                    self.tableaus
+                        .iter()
+                        .enumerate()
+                        .for_each(|(to_tableau_idx, _)| {
+                            if from_tableau_idx != to_tableau_idx {
+                                if let Some(mv) = self.get_specific_move_between_tableaus(
+                                    from_tableau_idx,
+                                    index,
+                                    to_tableau_idx,
+                                ) {
+                                    set.insert(mv);
+                                }
+                            }
+                        });
+                }
             }
         }
         set

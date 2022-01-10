@@ -39,6 +39,7 @@ pub struct Game {
     // TODO: We can optimize this further
     // stock and waste will always add up to 52 at most, so they can share an array
     tableaus: [CardStack<20>; 7],
+    first_unlocked_idx: [Option<u8>; 7],
     foundations: [Option<Card>; 4],
     stock: CardStack<52>,
     waste: CardStack<52>,
@@ -55,12 +56,32 @@ impl Game {
 
     fn sort_tableaus(&mut self) {
         // This trick helps reduce the problem space by eliminating symmetrical setups
-        self.tableaus.sort()
+        self.tableaus.sort();
+        // we need to reset first unlocked when we sort.
+        for idx in 0..7 {
+            self.set_first_unlocked_index(idx)
+        }
     }
 
     fn set_stock(&mut self) {
         self.stock.0 = (0..NUM_CARDS_DECK).collect::<ArrayVec<Card, 52>>();
         self.stock.0.shuffle(&mut thread_rng());
+    }
+
+    fn set_first_unlocked_index(&mut self, tableau_idx: usize) {
+        if self.tableaus[tableau_idx].0.is_empty() {
+            self.first_unlocked_idx[tableau_idx] = None;
+        } else {
+            for (card_idx, _) in self.tableaus[tableau_idx].0.iter().enumerate().rev() {
+                if !self.is_card_unlocked(tableau_idx, card_idx) {
+                    self.first_unlocked_idx[tableau_idx] = Some(card_idx as u8 + 1);
+                    break;
+                }
+            }
+            if self.first_unlocked_idx[tableau_idx].is_none() {
+                self.first_unlocked_idx[tableau_idx] = Some(0);
+            }
+        }
     }
 
     fn initial_deal(&mut self) {
@@ -233,6 +254,8 @@ impl Game {
         // If we the tableau is now empty, we need to sort the tableaus
         if new_game.tableaus[tableau_idx as usize].0.is_empty() {
             new_game.sort_tableaus();
+        } else {
+            new_game.set_first_unlocked_index(tableau_idx as usize);
         }
         new_game
     }
@@ -250,6 +273,7 @@ impl Game {
     }
 
     fn move_stack_between_tableaus(&self, from_index: u8, card_idx: u8, to_index: u8) -> Self {
+        // TODO: Review
         let mut new_game = self.clone();
         let drain_iter = new_game.tableaus[from_index as usize]
             .0
@@ -263,6 +287,8 @@ impl Game {
         // If we from tableau is empty or the to tableau was empty, we need to sort the tableaus
         if new_game.tableaus[from_index as usize].0.is_empty() || to_prev_len == 0 {
             new_game.sort_tableaus();
+        } else {
+            new_game.set_first_unlocked_index(from_index as usize);
         }
         new_game
     }
@@ -291,6 +317,11 @@ impl fmt::Display for Game {
                     .try_for_each(|card| write!(f, "{}\t", pretty_string(*card)))?;
                 writeln!(f)
             })?;
+        writeln!(f, "--------- Unlocked ------------")?;
+        self.first_unlocked_idx
+            .iter()
+            .try_for_each(|idx| write!(f, "{:?}\t", idx))?;
+        writeln!(f)?;
         writeln!(f, "--------- Stock ---------------")?;
         self.stock
             .0

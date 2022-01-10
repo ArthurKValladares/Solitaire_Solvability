@@ -1,35 +1,49 @@
 Current State:
 
 --------- Foundations ---------
-[CA]    [ ]     [SA]    [H4]
+[ ]     [ ]     [ ]     [ ]
 --------- Tableaus ------------
-0:      CJ      C2      SK      SQ      HK
-1:      D3      S6      S9
-2:      D6      D2      C5      S8      D4      S5
-3:      S2      C9      HQ      C4      H9      S10     DJ      CQ      DK
-4:      H6      C7
-5:      H8      S9      DQ      DA      H5      D8      S4      D5      C6      D7      C8
-6:
+0:      CA      D5
+1:      D6      C7      CJ
+2:      S2      CJ      SJ      H3      D8      D2      D7
+3:      S3      S8      HA      D4      D10
+4:      S9      H7      CK      H4      DA      H8
+5:      SQ
+6:      H6      C9      C3      S7
+--------- Unlocked ------------
+Some(1) Some(2) Some(6) Some(4) Some(5) Some(0) Some(3)
 --------- Stock ---------------
-H7
+H2 D3 SA HQ C4 DK S6 HJ C6 C8 SK C5 H5 S10 H10 DJ C2 HK S5 DQ D9 S4 CQ
 --------- Waste ---------------
-SJ HJ S3 D10 C3 D9 CK C10 H10
+C10
+--------- Valid Moves ---------
+From: Tableau((4, 5)) - H8      To: Tableau((6, 4)) - S7
+From: Tableau((1, 2)) - CJ      To: Tableau((3, 5)) - D10
+From: Stock - CQ        To: Waste - C10
 
 
 
 Current State:
 
 --------- Foundations ---------
-[ ]     [ ]     [SA]    [H4]
+[ ]     [ ]     [ ]     [ ]
 --------- Tableaus ------------
-0:      CJ      C2      SK      SQ
-1:      D3      S6      S9      D10
-2:      D6      D2      C5      S8      D4      S5      H6      C7
-3:      S2      C9      HQ      C4      D5      C6      H7      C8      H9      S10     DJ      CQ      DK
-4:      H8      S9      DQ      DA      H5      D8      S4
-5:      HK
-6:
+0:      CA      D5
+1:      D6      C7
+2:      S2      CJ      SJ      H3      D8      D2      D7
+3:      S3      S8      HA      D4      D10     CJ
+4:      S9      H7      CK      H4      DA      H8
+5:      SQ
+6:      H6      C9      C3      S7
+--------- Unlocked ------------
+Some(1) Some(2) Some(6) Some(4) Some(5) Some(0) Some(3)
 --------- Stock ---------------
-H10
+H2 D3 SA HQ C4 DK S6 HJ C6 C8 SK C5 H5 S10 H10 DJ C2 HK S5 DQ D9 S4 CQ C10
 --------- Waste ---------------
-SJ HJ CA S3 D7 C3 D9 CK C10
+
+--------- Valid Moves ---------
+
+
+PROBLEM:
+This moved C10 from the waste to the stock. This should not have happened.
+It also made the move `From: Tableau((1, 2)) - CJ      To: Tableau((3, 5)) - D10` without correctly updating the unlocked
