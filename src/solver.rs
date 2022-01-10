@@ -5,6 +5,7 @@ use super::{
 use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashSet},
+    time::Instant,
 };
 
 pub struct Solver {
@@ -68,7 +69,6 @@ impl Solver {
                 return Some(new_state);
             }
             self.visited_games_states.insert(new_state.clone());
-
             let valid_moves = new_state.valid_moves();
             for valid_move in &valid_moves {
                 let new_state_to_visit = new_state.handle_move(valid_move);

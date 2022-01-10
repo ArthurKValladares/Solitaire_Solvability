@@ -7,6 +7,7 @@ use solver::*;
 use card::*;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{collections::HashSet, fmt, cmp::Ordering, time::Instant};
+use arrayvec::ArrayVec;
 
 #[derive(Debug, Hash, PartialEq, Eq)]
 enum CardPosition {
@@ -42,21 +43,21 @@ impl Move {
 }
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
-pub struct CardStack(Vec<Card>);
+pub struct CardStack<const CAP: usize>(ArrayVec<Card, CAP>);
 
-impl CardStack {
+impl<const CAP: usize> CardStack<CAP> {
     pub fn score(&self) -> u8 {
         *self.0.first().unwrap_or(&u8::MAX)
     }
 }
 
-impl PartialOrd for CardStack {
+impl<const CAP: usize> PartialOrd for CardStack<CAP> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.score().cmp(&other.score()))
     }
 }
 
-impl Ord for CardStack{
+impl<const CAP: usize> Ord for CardStack<CAP>{
     fn cmp(&self, other: &Self) -> Ordering {
         self.score().cmp(&other.score())
     }
@@ -65,10 +66,12 @@ impl Ord for CardStack{
 // TODO: Make sure this is all stack-allocated, and uses as few bytes as possible
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Game {
-    tableaus: [CardStack; 7],
+    // TODO: We can optimize this further
+    // stock and waste will always add up to 52 at most, so they can share an array
+    tableaus: [CardStack<20>; 7],
     foundations: [Option<Card>; 4],
-    stock: CardStack,
-    waste: CardStack,
+    stock: CardStack<52>,
+    waste: CardStack<52>,
 }
 
 impl Game {
@@ -85,19 +88,19 @@ impl Game {
     }
 
     fn set_stock(&mut self) {
-        self.stock.0 = (0..NUM_CARDS_DECK).collect::<Vec<Card>>();
+        self.stock.0 = (0..NUM_CARDS_DECK).collect::<ArrayVec<Card, 52>>();
         self.stock.0.shuffle(&mut thread_rng());
     }
 
     #[rustfmt::skip]
     fn initial_deal(&mut self) {   
-        self.tableaus[0].0 = vec![self.stock.0[51]];
-        self.tableaus[1].0 = vec![self.stock.0[51 - 1], self.stock.0[51 - 7]];
-        self.tableaus[2].0 = vec![self.stock.0[51 - 2], self.stock.0[51 - 8], self.stock.0[51 - 12]];
-        self.tableaus[3].0 = vec![self.stock.0[51 - 3], self.stock.0[51 - 9], self.stock.0[51 - 14], self.stock.0[51 - 18]];
-        self.tableaus[4].0 = vec![self.stock.0[51 - 4], self.stock.0[51 - 10], self.stock.0[51 - 15], self.stock.0[51 - 19], self.stock.0[51 - 22]];
-        self.tableaus[5].0 = vec![self.stock.0[51 - 5], self.stock.0[51 - 11], self.stock.0[51 - 16], self.stock.0[51 - 20], self.stock.0[51 - 23], self.stock.0[51 - 25]];
-        self.tableaus[6].0 = vec![self.stock.0[51 - 6], self.stock.0[51 - 12], self.stock.0[51 - 17], self.stock.0[51 - 21], self.stock.0[51 - 24], self.stock.0[51 - 26], self.stock.0[51 - 27]];
+        self.tableaus[0].0.try_extend_from_slice(&[self.stock.0[51]]).expect("Could extend tableau");
+        self.tableaus[1].0.try_extend_from_slice(&[self.stock.0[51 - 1], self.stock.0[51 - 7]]).expect("Could extend tableau");
+        self.tableaus[2].0.try_extend_from_slice(&[self.stock.0[51 - 2], self.stock.0[51 - 8], self.stock.0[51 - 12]]).expect("Could extend tableau");
+        self.tableaus[3].0.try_extend_from_slice(&[self.stock.0[51 - 3], self.stock.0[51 - 9], self.stock.0[51 - 14], self.stock.0[51 - 18]]).expect("Could extend tableau");
+        self.tableaus[4].0.try_extend_from_slice(&[self.stock.0[51 - 4], self.stock.0[51 - 10], self.stock.0[51 - 15], self.stock.0[51 - 19], self.stock.0[51 - 22]]).expect("Could extend tableau");
+        self.tableaus[5].0.try_extend_from_slice(&[self.stock.0[51 - 5], self.stock.0[51 - 11], self.stock.0[51 - 16], self.stock.0[51 - 20], self.stock.0[51 - 23], self.stock.0[51 - 25]]).expect("Could extend tableau");
+        self.tableaus[6].0.try_extend_from_slice(&[self.stock.0[51 - 6], self.stock.0[51 - 12], self.stock.0[51 - 17], self.stock.0[51 - 21], self.stock.0[51 - 24], self.stock.0[51 - 26], self.stock.0[51 - 27]]).expect("Could extend tableau");
         self.stock.0.truncate(NUM_CARDS_DECK as usize - 28);
         self.sort_tableaus();
     }
