@@ -41,7 +41,7 @@ impl Solver {
         let mut visited_games_states = HashSet::new();
         visited_games_states.insert(original_game.clone());
         let mut states_to_visit = BinaryHeap::new();
-        let valid_moves = original_game.valid_moves();
+        let valid_moves = original_game.valid_moves(None);
         for valid_move in &valid_moves {
             states_to_visit.push(original_game.handle_move(valid_move));
         }
@@ -69,7 +69,7 @@ impl Solver {
                 return Some(new_state);
             }
             self.visited_games_states.insert(new_state.clone());
-            let valid_moves = new_state.valid_moves();
+            let valid_moves = new_state.valid_moves(None);
             for valid_move in &valid_moves {
                 let new_state_to_visit = new_state.handle_move(valid_move);
                 if !self.visited_games_states.contains(&new_state_to_visit) {
