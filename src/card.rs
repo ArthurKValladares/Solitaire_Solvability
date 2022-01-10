@@ -86,17 +86,21 @@ pub fn is_yellow(card: Card) -> bool {
 }
 
 pub fn card_rank(card: Card) -> u8 {
-    match card {
-        CLUBS_ACE..=CLUBS_KING => card - CLUBS_ACE,
-        DIAMONDS_ACE..=DIAMONDS_KING => card - DIAMONDS_ACE,
-        HEARTS_ACE..=HEARTS_KING => card - HEARTS_ACE,
-        SPADES_ACE..=SPADES_KING => card - SPADES_ACE,
-        _ => unreachable!(),
+    if card == u8::MAX {
+        0
+    } else {
+        match card {
+            CLUBS_ACE..=CLUBS_KING => card - CLUBS_ACE + 1,
+            DIAMONDS_ACE..=DIAMONDS_KING => card - DIAMONDS_ACE + 1,
+            HEARTS_ACE..=HEARTS_KING => card - HEARTS_ACE + 1,
+            SPADES_ACE..=SPADES_KING => card - SPADES_ACE + 1,
+            _ => unreachable!(),
+        }
     }
 }
 
 pub fn are_card_ranks_sequential(bottom: Card, top: Card) -> bool {
-    card_rank(top) != 0 && card_rank(bottom) == (card_rank(top) - 1)
+    card_rank(top) > 1 && card_rank(bottom) == (card_rank(top) - 1)
 }
 
 pub fn are_card_colors_different(card1: Card, card2: Card) -> bool {
@@ -118,39 +122,43 @@ pub fn is_king(card: Card) -> bool {
 }
 
 pub fn ranking_of_kings() -> usize {
-    CLUBS_KING as usize + SPADES_KING as usize + DIAMONDS_KING as usize + HEARTS_KING as usize
+    13 * 4
 }
 
 pub fn pretty_string(card: Card) -> String {
-    let suit_rank = suit_rank(card);
-    let card_rank = card_rank(card);
-    let suit_string = match suit_rank {
-        0 => "C",
-        1 => "D",
-        2 => "S",
-        3 => "H",
-        _ => unreachable!(),
-    };
-    let rank_string = match card_rank {
-        0 => "A",
-        1 => "2",
-        2 => "3",
-        3 => "4",
-        4 => "5",
-        5 => "6",
-        6 => "7",
-        7 => "8",
-        8 => "9",
-        9 => "10",
-        10 => "J",
-        11 => "Q",
-        12 => "K",
-        _ => unreachable!(),
-    };
-    let ret_string = format!("{}{}", suit_string, rank_string);
-    if is_red(card) {
-        ret_string.red().to_string()
+    if card == u8::MAX {
+        " ".to_string()
     } else {
-        ret_string.yellow().to_string()
+        let suit_rank = suit_rank(card);
+        let card_rank = card_rank(card);
+        let suit_string = match suit_rank {
+            0 => "C",
+            1 => "D",
+            2 => "S",
+            3 => "H",
+            _ => unreachable!(),
+        };
+        let rank_string = match card_rank {
+            1 => "A",
+            2 => "2",
+            3 => "3",
+            4 => "4",
+            5 => "5",
+            6 => "6",
+            7 => "7",
+            8 => "8",
+            9 => "9",
+            10 => "10",
+            11 => "J",
+            12 => "Q",
+            13 => "K",
+            _ => unreachable!(),
+        };
+        let ret_string = format!("{}{}", suit_string, rank_string);
+        if is_red(card) {
+            ret_string.red().to_string()
+        } else {
+            ret_string.yellow().to_string()
+        }
     }
 }

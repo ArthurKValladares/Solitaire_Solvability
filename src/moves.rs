@@ -21,7 +21,7 @@ impl Move {
         let from_card = match self.from {
             CardPosition::Stock => game.stock.0.last().unwrap(),
             CardPosition::Waste => game.waste.0.last().unwrap(),
-            CardPosition::Foundation(idx) => game.foundations[idx as usize].as_ref().unwrap(),
+            CardPosition::Foundation(idx) => &game.foundations[idx as usize],
             CardPosition::Tableau((tableau_idx, card_idx)) => {
                 &game.tableaus[tableau_idx as usize].0[card_idx as usize]
             }
@@ -29,7 +29,7 @@ impl Move {
         let to_card = match self.to {
             CardPosition::Stock => game.stock.0.last(),
             CardPosition::Waste => game.waste.0.last(),
-            CardPosition::Foundation(idx) => game.foundations[idx as usize].as_ref(),
+            CardPosition::Foundation(idx) => Some(&game.foundations[idx as usize]),
             CardPosition::Tableau((tableau_idx, _)) => game.tableaus[tableau_idx as usize].0.last(),
         };
         format!(

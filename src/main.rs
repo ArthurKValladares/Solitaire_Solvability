@@ -13,7 +13,7 @@ use solver::*;
 use std::{cmp::Ordering, fmt, time::Instant};
 
 const VERBOSE_PRINT: bool = true;
-const DEBUG: bool = true;
+const DEBUG: bool = false;
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct CardStack<const CAP: usize>(ArrayVec<Card, CAP>);
@@ -42,7 +42,7 @@ pub struct Game {
     // stock and waste will always add up to 52 at most, so they can share an array
     tableaus: [CardStack<20>; 7],
     first_unlocked_idx: [Option<u8>; 7],
-    foundations: [Option<Card>; 4],
+    foundations: [Card; 4],
     stock: CardStack<52>,
     waste: CardStack<52>,
     prev_move: Option<Move>,
@@ -51,6 +51,7 @@ pub struct Game {
 impl Game {
     fn new() -> Self {
         let mut game = Game::default();
+        game.foundations = [u8::MAX; 4];
         game.set_stock();
         game.initial_deal();
         game
@@ -164,11 +165,12 @@ impl Game {
     }
 
     fn can_move_card_to_foundation(&self, card: Card) -> bool {
-        if let Some(top_foundation_card) = self.foundations[suit_rank(card) as usize] {
+        let top_foundation_card = self.foundations[suit_rank(card) as usize];
+        if top_foundation_card != u8::MAX {
             are_card_ranks_sequential(top_foundation_card, card)
                 && are_card_suits_the_same(top_foundation_card, card)
         } else {
-            card_rank(card) == 0
+            card_rank(card) == 1
         }
     }
 
@@ -189,7 +191,7 @@ impl Game {
     fn is_game_won(&self) -> bool {
         self.foundations
             .iter()
-            .fold(0, |acc, foundation| acc + foundation.unwrap_or(0) as usize)
+            .fold(0, |acc, card| acc + card_rank(*card) as usize)
             == ranking_of_kings()
     }
     //
@@ -243,7 +245,7 @@ impl Game {
     fn move_from_waste_to_foundation(&self) -> Self {
         let mut new_game = self.clone();
         let card = new_game.waste.0.pop().expect("Popped empty waste");
-        new_game.foundations[suit_rank(card) as usize] = Some(card);
+        new_game.foundations[suit_rank(card) as usize] = card;
         new_game
     }
 
@@ -253,7 +255,7 @@ impl Game {
             .0
             .pop()
             .expect("Popped empty tableau");
-        new_game.foundations[suit_rank(card) as usize] = Some(card);
+        new_game.foundations[suit_rank(card) as usize] = card;
         // If we the tableau is now empty, we need to sort the tableaus
         if new_game.tableaus[tableau_idx as usize].0.is_empty() {
             new_game.sort_tableaus();
@@ -299,13 +301,9 @@ impl Game {
 impl fmt::Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "\n--------- Foundations ---------")?;
-        self.foundations.iter().try_for_each(|foundation| {
-            write!(
-                f,
-                "[{}]\t",
-                foundation.map_or_else(|| " ".to_string(), |card| pretty_string(card))
-            )
-        })?;
+        self.foundations
+            .iter()
+            .try_for_each(|card| write!(f, "[{}]\t", pretty_string(*card)))?;
         writeln!(f)?;
         writeln!(f, "--------- Tableaus ------------")?;
         self.tableaus
