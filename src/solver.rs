@@ -1,4 +1,7 @@
-use super::{CardPosition, Game, Move};
+use super::{
+    card::{Card, NUM_CARDS_DECK},
+    CardPosition, Game, Move,
+};
 use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashSet},
@@ -15,7 +18,7 @@ impl Game {
     pub fn score(&self) -> usize {
         self.foundations
             .iter()
-            .fold(0, |acc, foundation| acc + foundation.0.len())
+            .fold(0, |acc, foundation| acc + foundation.unwrap_or(0) as usize)
     }
 }
 
@@ -53,7 +56,12 @@ impl Solver {
     pub fn is_solvable(&mut self) -> Option<Game> {
         println!("Original Game:\n{}", self.original_game);
         // TODO: Need to keep track of depth so that we can keep a stack of moves with the solution
+        let mut iter = 0;
         while !self.states_to_visit.is_empty() {
+            iter += 1;
+            if iter >= 10000 {
+                break;
+            }
             let new_state = self.states_to_visit.pop().unwrap();
             println!("\nCurrent State:\n{}", new_state);
             if new_state.is_game_won() {

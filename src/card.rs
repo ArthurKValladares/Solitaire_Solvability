@@ -117,6 +117,10 @@ pub fn is_king(card: Card) -> bool {
     card % 13 == 12
 }
 
+pub fn ranking_of_kings() -> usize {
+    CLUBS_KING as usize + SPADES_KING as usize + DIAMONDS_KING as usize + HEARTS_KING as usize
+}
+
 pub fn pretty_string(card: Card) -> String {
     let suit_rank = suit_rank(card);
     let card_rank = card_rank(card);
