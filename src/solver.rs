@@ -8,7 +8,7 @@ pub struct Solver {
     original_game: Game,
     // TODO: We need a reduced game state to make this more efficient.
     // I can use a 52 byte array in the following configurration:
-    // [foundation_0...foundation_4; tableau_0...tableau_6; stock; waste]
+    // [foundation_0...foundation_3; tableau_0...tableau_6; stock; waste]
     // Since cards only take 6 bits of the u8, we can use the top 2 bits to store where the break
     // between foundations/tableaus/stock/waste are
     visited_games_states: HashSet<Game>,

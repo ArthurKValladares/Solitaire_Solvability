@@ -3,6 +3,7 @@
 mod card;
 mod moves;
 mod solver;
+mod tests;
 
 use arrayvec::ArrayVec;
 use card::*;
@@ -12,6 +13,7 @@ use solver::*;
 use std::{cmp::Ordering, fmt, time::Instant};
 
 const VERBOSE_PRINT: bool = true;
+const DEBUG: bool = true;
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct CardStack<const CAP: usize>(ArrayVec<Card, CAP>);
@@ -214,6 +216,9 @@ impl Game {
             _ => unreachable!(),
         };
         game.prev_move = Some(mv.clone());
+        if DEBUG {
+            assert!(tests::is_valid_game_state(&game));
+        }
         game
     }
 
@@ -349,3 +354,5 @@ fn main() {
     println!("Game: {:?}", solver.is_solvable());
     println!("Elapsed Time: {}", timer.elapsed().as_millis() as f64);
 }
+
+// TODO: Reduce symmetry in suit permutation

@@ -303,3 +303,5 @@ impl Game {
         valid_moves
     }
 }
+
+// TODO: Moves to two different empty spaces are the same. Reduce that symmetry
