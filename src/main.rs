@@ -6,7 +6,7 @@ mod solver;
 use solver::*;
 use card::*;
 use rand::{seq::SliceRandom, thread_rng};
-use std::{collections::HashSet, fmt};
+use std::{collections::HashSet, fmt, cmp::Ordering};
 
 #[derive(Debug, Hash, PartialEq, Eq)]
 enum CardPosition {
@@ -28,25 +28,47 @@ impl Move {
         let from_card = match self.from {
             CardPosition::Stock => game.stock.last().unwrap(),
             CardPosition::Waste => game.waste.last().unwrap(),
-            CardPosition::Foundation(idx) => game.foundations[idx as usize].last().unwrap(),
-            CardPosition::Tableau((tableau_idx, card_idx)) => &game.tableaus[tableau_idx as usize][card_idx as usize],
+            CardPosition::Foundation(idx) => game.foundations[idx as usize].0.last().unwrap(),
+            CardPosition::Tableau((tableau_idx, card_idx)) => &game.tableaus[tableau_idx as usize].0[card_idx as usize],
         };
         let to_card = match self.to {
             CardPosition::Stock => game.stock.last(),
             CardPosition::Waste => game.waste.last(),
-            CardPosition::Foundation(idx) => game.foundations[idx as usize].last(),
-            CardPosition::Tableau((tableau_idx, _)) => game.tableaus[tableau_idx as usize].last(),
+            CardPosition::Foundation(idx) => game.foundations[idx as usize].0.last(),
+            CardPosition::Tableau((tableau_idx, _)) => game.tableaus[tableau_idx as usize].0.last(),
         };
         format!("From: {:?} - {}\tTo: {:?} - {}", self.from,  pretty_string(*from_card), self.to, to_card.map_or_else(|| " ".to_string(), |card| pretty_string(*card)))
     }
 }
+
+#[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
+pub struct CardStack(Vec<Card>);
+
+impl CardStack {
+    pub fn score(&self) -> u8 {
+        *self.0.first().unwrap_or(&u8::MAX)
+    }
+}
+
+impl PartialOrd for CardStack {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.score().cmp(&other.score()))
+    }
+}
+
+impl Ord for CardStack{
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.score().cmp(&other.score())
+    }
+}
+
+// TODO: Make sure this is all stack-allocated, and uses as few bytes as possible
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Game {
-    tableaus: [Vec<Card>; 7],
-    foundations: [Vec<Card>; 4],
+    tableaus: [CardStack; 7],
+    foundations: [CardStack; 4],
     stock: Vec<Card>,
     waste: Vec<Card>,
-    num_restocks: u8,
 }
 
 impl Game {
@@ -57,6 +79,11 @@ impl Game {
         game
     }
 
+    fn sort_tableaus(&mut self) {
+        // This trick helps reduce the problem space by eliminating symmetrical setups
+        self.tableaus.sort()
+    }
+
     fn set_stock(&mut self) {
         self.stock = (0..NUM_CARDS_DECK).collect::<Vec<Card>>();
         self.stock.shuffle(&mut thread_rng());
@@ -64,14 +91,15 @@ impl Game {
 
     #[rustfmt::skip]
     fn initial_deal(&mut self) {   
-        self.tableaus[0] = vec![self.stock[51]];
-        self.tableaus[1] = vec![self.stock[51 - 1], self.stock[51 - 7]];
-        self.tableaus[2] = vec![self.stock[51 - 2], self.stock[51 - 8], self.stock[51 - 12]];
-        self.tableaus[3] = vec![self.stock[51 - 3], self.stock[51 - 9], self.stock[51 - 14], self.stock[51 - 18]];
-        self.tableaus[4] = vec![self.stock[51 - 4], self.stock[51 - 10], self.stock[51 - 15], self.stock[51 - 19], self.stock[51 - 22]];
-        self.tableaus[5] = vec![self.stock[51 - 5], self.stock[51 - 11], self.stock[51 - 16], self.stock[51 - 20], self.stock[51 - 23], self.stock[51 - 25]];
-        self.tableaus[6] = vec![self.stock[51 - 6], self.stock[51 - 12], self.stock[51 - 17], self.stock[51 - 21], self.stock[51 - 24], self.stock[51 - 26], self.stock[51 - 27]];
+        self.tableaus[0].0 = vec![self.stock[51]];
+        self.tableaus[1].0 = vec![self.stock[51 - 1], self.stock[51 - 7]];
+        self.tableaus[2].0 = vec![self.stock[51 - 2], self.stock[51 - 8], self.stock[51 - 12]];
+        self.tableaus[3].0 = vec![self.stock[51 - 3], self.stock[51 - 9], self.stock[51 - 14], self.stock[51 - 18]];
+        self.tableaus[4].0 = vec![self.stock[51 - 4], self.stock[51 - 10], self.stock[51 - 15], self.stock[51 - 19], self.stock[51 - 22]];
+        self.tableaus[5].0 = vec![self.stock[51 - 5], self.stock[51 - 11], self.stock[51 - 16], self.stock[51 - 20], self.stock[51 - 23], self.stock[51 - 25]];
+        self.tableaus[6].0 = vec![self.stock[51 - 6], self.stock[51 - 12], self.stock[51 - 17], self.stock[51 - 21], self.stock[51 - 24], self.stock[51 - 26], self.stock[51 - 27]];
         self.stock.truncate(51 - 28);
+        self.sort_tableaus();
     }
 
     fn valid_moves(&self) -> HashSet<Move> {
@@ -91,12 +119,10 @@ impl Game {
             });
         } else {
             // Restock
-            if self.num_restocks < 3 {
-                valid_moves.insert(Move{
-                    from: CardPosition::Waste,
-                    to: CardPosition::Stock
-                });
-            }
+            valid_moves.insert(Move{
+                from: CardPosition::Waste,
+                to: CardPosition::Stock
+            });
         }
 
         // Valid moves from waste
@@ -111,17 +137,17 @@ impl Game {
             }
 
             self.tableaus.iter().enumerate().for_each(|(tableau_idx, tableau)| {
-                if let Some(tableau_card) = tableau.last() {
+                if let Some(tableau_card) = tableau.0.last() {
                     if Self::can_be_placed_on_top_of(*tableau_card, *card) {
                         valid_moves.insert(Move{
                             from: CardPosition::Waste,
-                            to: CardPosition::Tableau((tableau_idx as u8, self.tableaus[tableau_idx].len() as u8))
+                            to: CardPosition::Tableau((tableau_idx as u8, self.tableaus[tableau_idx].0.len() as u8))
                         });
                     }
                 } else if is_king(*card) {
                     valid_moves.insert(Move{
                         from: CardPosition::Waste,
-                        to: CardPosition::Tableau((tableau_idx as u8, self.tableaus[tableau_idx].len() as u8))
+                        to: CardPosition::Tableau((tableau_idx as u8, self.tableaus[tableau_idx].0.len() as u8))
                     });
                 }
             });
@@ -130,31 +156,31 @@ impl Game {
         // Valid moves from tableau
         for (from_tableau_idx, from_tableau) in self.tableaus.iter().enumerate() {
             // Move from tableau to foundation
-            if let Some(from_tableau_card) = from_tableau.last() {
+            if let Some(from_tableau_card) = from_tableau.0.last() {
                 if self.can_move_card_to_foundation(*from_tableau_card) {
                     valid_moves.insert(Move{
-                        from: CardPosition::Tableau((from_tableau_idx as u8, (self.tableaus[from_tableau_idx].len() - 1) as u8)),
+                        from: CardPosition::Tableau((from_tableau_idx as u8, (self.tableaus[from_tableau_idx].0.len() - 1) as u8)),
                         to: CardPosition::Foundation(suit_rank(*from_tableau_card))
                     });
                 }
             }
 
             // Move from tableau to tableau
-            for (card_idx, card) in from_tableau.iter().enumerate().rev() {
+            for (card_idx, card) in from_tableau.0.iter().enumerate().rev() {
                 if self.is_card_unlocked(from_tableau_idx, card_idx) {
                     self.tableaus.iter().enumerate().for_each(|(to_tableau_idx, to_tableau)| {
                         if from_tableau_idx != to_tableau_idx {
-                            if let Some(to_tableau_card) = to_tableau.last() {
+                            if let Some(to_tableau_card) = to_tableau.0.last() {
                                 if Self::can_be_placed_on_top_of(*to_tableau_card, *card) {
                                     valid_moves.insert(Move{
                                         from: CardPosition::Tableau((from_tableau_idx as u8, card_idx as u8)),
-                                        to: CardPosition::Tableau((to_tableau_idx as u8, self.tableaus[to_tableau_idx].len() as u8))
+                                        to: CardPosition::Tableau((to_tableau_idx as u8, self.tableaus[to_tableau_idx].0.len() as u8))
                                     });
                                 }
                             } else if is_king(*card) {
                                 valid_moves.insert(Move{
                                     from: CardPosition::Tableau((from_tableau_idx as u8, card_idx as u8)),
-                                        to: CardPosition::Tableau((to_tableau_idx as u8, self.tableaus[to_tableau_idx].len() as u8))
+                                    to: CardPosition::Tableau((to_tableau_idx as u8, self.tableaus[to_tableau_idx].0.len() as u8))
                                 });
                             }
                         }
@@ -177,7 +203,7 @@ impl Game {
     }
 
     fn can_move_card_to_tableau(&self, card: Card, tableau_idx: usize) -> bool {
-        if let Some(top_tableau_card) = self.tableaus[tableau_idx].last() {
+        if let Some(top_tableau_card) = self.tableaus[tableau_idx].0.last() {
             Self::can_be_placed_on_top_of(*top_tableau_card, card)
         } else {
             false
@@ -185,7 +211,7 @@ impl Game {
     }
 
     fn can_move_card_to_foundation(&self, card: Card) -> bool {
-        if let Some(top_foundation_card) = self.foundations[suit_rank(card) as usize].last() {
+        if let Some(top_foundation_card) = self.foundations[suit_rank(card) as usize].0.last() {
             are_card_ranks_sequential(*top_foundation_card, card) && are_card_suits_the_same(*top_foundation_card, card)
         } else {
             card_rank(card) == 0
@@ -193,10 +219,10 @@ impl Game {
     }
 
     fn is_card_unlocked(&self, tableau_idx: usize, card_idx: usize) -> bool {
-        if card_idx == self.tableaus[tableau_idx].len() - 1 {
+        if card_idx == self.tableaus[tableau_idx].0.len() - 1 {
             true
         } else {
-            self.tableaus[tableau_idx][card_idx..].iter().fold((true, None), |(result, prev_card) : (bool, Option<&Card>), card| {
+            self.tableaus[tableau_idx].0[card_idx..].iter().fold((true, None), |(result, prev_card) : (bool, Option<&Card>), card| {
                 (result && if let Some(prev_card) = prev_card {
                     Self::can_be_placed_on_top_of(*prev_card, *card)
                 } else {
@@ -215,7 +241,7 @@ impl Game {
     }
 
     fn is_game_won(&self) -> bool {
-        self.foundations.iter().fold(0, |acc, foundation|  acc + foundation.len()) == NUM_CARDS_DECK.into()
+        self.foundations.iter().fold(0, |acc, foundation|  acc + foundation.0.len()) == NUM_CARDS_DECK.into()
     }
     //
     // Actions
@@ -238,7 +264,6 @@ impl Game {
 
     fn restock(&self) -> Self {
         let mut new_game = self.clone();
-        new_game.num_restocks += 1;
         new_game.waste.reverse();
         std::mem::swap(&mut new_game.stock, &mut new_game.waste);
         new_game
@@ -255,28 +280,41 @@ impl Game {
     fn move_from_waste_to_foundation(&self) -> Self {
         let mut new_game = self.clone();
         let card = new_game.waste.pop().expect("Popped empty waste");
-        new_game.foundations[suit_rank(card) as usize].push(card);
+        new_game.foundations[suit_rank(card) as usize].0.push(card);
         new_game
     }
 
     fn move_from_tableau_to_foundation(&self, tableau_idx: u8) -> Self {
         let mut new_game = self.clone();
-        let card =  new_game.tableaus[tableau_idx as usize].pop().expect("Popped empty tableau");
-        new_game.foundations[suit_rank(card) as usize].push(card);
+        let card =  new_game.tableaus[tableau_idx as usize].0.pop().expect("Popped empty tableau");
+        new_game.foundations[suit_rank(card) as usize].0.push(card);
+        // If we the tableau is now empty, we need to sort the tableaus
+        if  new_game.tableaus[tableau_idx as usize].0.is_empty() {
+            new_game.sort_tableaus();
+        }
         new_game
     }
 
     fn move_from_waste_to_tableau(&self, tableau_idx: u8) -> Self {
         let mut new_game = self.clone();
-        new_game.tableaus[tableau_idx as usize].push(new_game.waste.pop().expect("Popped empty waste"));
+        new_game.tableaus[tableau_idx as usize].0.push(new_game.waste.pop().expect("Popped empty waste"));
+        // If we the tableau now only has 1 card, we need to sort the tableaus
+        if  new_game.tableaus[tableau_idx as usize].0.len() == 1 {
+            new_game.sort_tableaus();
+        }
         new_game
     }
 
     fn move_stack_between_tableaus(&self, from_index: u8, card_idx: u8, to_index: u8) -> Self {
         let mut new_game = self.clone();
-        let drain_iter = new_game.tableaus[from_index as usize].drain((card_idx as usize)..).collect::<Vec<_>>();
-        new_game.tableaus[to_index as usize].extend(drain_iter);
-        new_game.tableaus[from_index as usize].truncate(card_idx as usize);
+        let drain_iter = new_game.tableaus[from_index as usize].0.drain((card_idx as usize)..).collect::<Vec<_>>();
+        let to_prev_len =  new_game.tableaus[to_index as usize].0.len();
+        new_game.tableaus[to_index as usize].0.extend(drain_iter);
+        new_game.tableaus[from_index as usize].0.truncate(card_idx as usize);
+        // If we from tableau is empty or the to tableau was empty, we need to sort the tableaus
+        if  new_game.tableaus[from_index as usize].0.is_empty() || to_prev_len == 0 {
+            new_game.sort_tableaus();
+        }
         new_game
     }
 }
@@ -284,12 +322,12 @@ impl Game {
 impl fmt::Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "\n--------- Foundations ---------")?;
-        self.foundations.iter().try_for_each(|foundation|  write!(f, "[{}]\t", foundation.last().map_or_else(|| " ".to_string(), |card| pretty_string(*card))))?;
+        self.foundations.iter().try_for_each(|foundation|  write!(f, "[{}]\t", foundation.0.last().map_or_else(|| " ".to_string(), |card| pretty_string(*card))))?;
         writeln!(f)?;
         writeln!(f, "--------- Tableaus ------------")?;
         self.tableaus.iter().enumerate().try_for_each(|(idx, tableau)| {
             write!(f, "{}:\t", idx)?;
-            tableau.iter().try_for_each(|card|  write!(f, "{}\t", pretty_string(*card)))?;
+            tableau.0.iter().try_for_each(|card|  write!(f, "{}\t", pretty_string(*card)))?;
             writeln!(f)
         })?;        
         writeln!(f, "--------- Stock ---------------")?;
@@ -309,3 +347,6 @@ fn main() {
     let mut solver = Solver::new();
     println!("Game: {:?}", solver.is_solvable());
 }
+
+// TODO: I need a "canonical" representation for game state, that ignores any symmetry and can be quickly constructed.
+// This will both reduce the number of state I need to search, and allow me to store each game state in only like 60 bytes.

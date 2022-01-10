@@ -15,7 +15,7 @@ impl Game {
     pub fn score(&self) -> usize {
         self.foundations
             .iter()
-            .fold(0, |acc, foundation| acc + foundation.len())
+            .fold(0, |acc, foundation| acc + foundation.0.len())
     }
 }
 
