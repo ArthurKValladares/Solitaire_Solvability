@@ -72,14 +72,12 @@ impl Game {
         if self.tableaus[tableau_idx].0.is_empty() {
             self.first_unlocked_idx[tableau_idx] = None;
         } else {
+            self.first_unlocked_idx[tableau_idx] = Some(0);
             for (card_idx, _) in self.tableaus[tableau_idx].0.iter().enumerate().rev() {
                 if !self.is_card_unlocked(tableau_idx, card_idx) {
                     self.first_unlocked_idx[tableau_idx] = Some(card_idx as u8 + 1);
                     break;
                 }
-            }
-            if self.first_unlocked_idx[tableau_idx].is_none() {
-                self.first_unlocked_idx[tableau_idx] = Some(0);
             }
         }
     }
@@ -273,7 +271,6 @@ impl Game {
     }
 
     fn move_stack_between_tableaus(&self, from_index: u8, card_idx: u8, to_index: u8) -> Self {
-        // TODO: Review
         let mut new_game = self.clone();
         let drain_iter = new_game.tableaus[from_index as usize]
             .0
@@ -284,7 +281,7 @@ impl Game {
         new_game.tableaus[from_index as usize]
             .0
             .truncate(card_idx as usize);
-        // If we from tableau is empty or the to tableau was empty, we need to sort the tableaus
+        // If from tableau is empty or the to tableau was empty, we need to sort the tableaus
         if new_game.tableaus[from_index as usize].0.is_empty() || to_prev_len == 0 {
             new_game.sort_tableaus();
         } else {
@@ -340,6 +337,8 @@ impl fmt::Display for Game {
                 .iter()
                 .try_for_each(|mv| writeln!(f, "{}", mv.pretty_string(self)))?;
         }
+        writeln!(f, "--------- Prev Move -----------")?;
+        writeln!(f, "{:?}", self.prev_move)?;
         writeln!(f)
     }
 }

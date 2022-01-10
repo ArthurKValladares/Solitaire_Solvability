@@ -303,7 +303,3 @@ impl Game {
         valid_moves
     }
 }
-
-// TODO: forbid
-// the move of only part of a built pile, if the card above the partial pile cannot at this point be moved
-// to foundation
