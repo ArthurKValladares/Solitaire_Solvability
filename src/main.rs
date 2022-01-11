@@ -1,9 +1,9 @@
 #![feature(int_abs_diff)]
+#![feature(int_log)]
 
 mod card;
 mod moves;
 mod solver;
-mod tests;
 
 use arrayvec::ArrayVec;
 use card::*;
@@ -13,7 +13,7 @@ use solver::*;
 use std::{cmp::Ordering, fmt, time::Instant};
 
 const VERBOSE_PRINT: bool = true;
-const DEBUG: bool = false;
+const DEBUG: bool = true;
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct CardStack<const CAP: usize>(ArrayVec<Card, CAP>);
@@ -38,9 +38,11 @@ impl<const CAP: usize> Ord for CardStack<CAP> {
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Game {
-    tableaus: [CardStack<20>; 7],
+    tableaus: [CardStack<18>; 7],
     first_unlocked_idx: [u8; 7],
     foundations: [Card; 4],
+    foundation_stack: u64,
+    // TODO: Some optimizations in stock and waste
     stock: CardStack<52>,
     waste: CardStack<52>,
     prev_move: Option<Move>,
@@ -52,7 +54,32 @@ impl Game {
         game.foundations = [u8::MAX; 4];
         game.set_stock();
         game.initial_deal();
+        game.validate();
         game
+    }
+
+    fn validate(&self) {
+        let mut game_stack: u64 = 0;
+        for card in &self.stock.0 {
+            game_stack |= 1 << card;
+        }
+        for card in &self.waste.0 {
+            game_stack |= 1 << card;
+        }
+        for tableau in &self.tableaus {
+            for card in &tableau.0 {
+                game_stack |= 1 << card;
+            }
+        }
+        let full_game_stack = self.foundation_stack | game_stack;
+        if full_game_stack != 0b0000000000001111111111111111111111111111111111111111111111111111 {
+            println!("Invalid Game State:\n{}", self);
+            let missing_bit = full_game_stack
+                ^ 0b0000000000001111111111111111111111111111111111111111111111111111;
+            let card = missing_bit.log2();
+            println!("Missing card: {}", pretty_string(card as u8));
+            panic!("Invalid state");
+        }
     }
 
     fn sort_tableaus(&mut self) {
@@ -97,7 +124,7 @@ impl Game {
             .try_extend_from_slice(&[
                 self.stock.0[51 - 2],
                 self.stock.0[51 - 8],
-                self.stock.0[51 - 12],
+                self.stock.0[51 - 13],
             ])
             .expect("Could extend tableau");
         self.tableaus[3]
@@ -217,7 +244,7 @@ impl Game {
         };
         game.prev_move = Some(mv.clone());
         if DEBUG {
-            assert!(tests::is_valid_game_state(&game));
+            game.validate()
         }
         game
     }
@@ -244,6 +271,7 @@ impl Game {
         let mut new_game = self.clone();
         let card = new_game.waste.0.pop().expect("Popped empty waste");
         new_game.foundations[suit_rank(card) as usize] = card;
+        new_game.foundation_stack |= 1 << card;
         new_game
     }
 
@@ -260,6 +288,7 @@ impl Game {
         } else {
             new_game.set_first_unlocked_index(tableau_idx as usize);
         }
+        new_game.foundation_stack |= 1 << card;
         new_game
     }
 
@@ -344,6 +373,7 @@ impl fmt::Display for Game {
 }
 
 fn main() {
+    println!("Game struct size: {}", std::mem::size_of::<Game>());
     let mut solver = Solver::new();
     let timer = Instant::now();
     println!("Game: {:?}", solver.is_solvable());

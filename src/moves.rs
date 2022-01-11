@@ -1,7 +1,7 @@
 use crate::{card::*, Game};
 use std::collections::HashSet;
 
-const PRUNING: bool = true;
+const PRUNING: bool = false;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum CardPosition {
@@ -46,6 +46,7 @@ impl Move {
 
 impl Game {
     fn get_move_from_stock(&self) -> Move {
+        // If stock is not empty we can draw, otherwise we can restock
         if !self.stock.0.is_empty() {
             Move {
                 from: CardPosition::Stock,
@@ -63,6 +64,7 @@ impl Game {
     fn get_move_from_waste_to_tableau(&self, tableau_idx: usize) -> Option<Move> {
         if let Some(card) = self.waste.0.last() {
             if let Some(tableau_card) = self.tableaus[tableau_idx].0.last() {
+                // If tableau is not empty, only move is waste card can be placed on tableau
                 if Self::can_be_placed_on_top_of(*tableau_card, *card) {
                     Some(Move {
                         from: CardPosition::Waste,
@@ -75,12 +77,10 @@ impl Game {
                     None
                 }
             } else if is_king(*card) {
+                // If tableau is empty, only kings can be moved there
                 Some(Move {
                     from: CardPosition::Waste,
-                    to: CardPosition::Tableau((
-                        tableau_idx as u8,
-                        self.tableaus[tableau_idx].0.len() as u8,
-                    )),
+                    to: CardPosition::Tableau((tableau_idx as u8, 0 as u8)),
                 })
             } else {
                 None
@@ -95,6 +95,7 @@ impl Game {
         if !self.waste.0.is_empty() {
             let card = self.waste.0.last().unwrap();
 
+            // Check if card can be moves directly to foundation
             if self.can_move_card_to_foundation(*card) {
                 set.insert(Move {
                     from: CardPosition::Waste,
@@ -105,6 +106,7 @@ impl Game {
                 }
             }
 
+            // Check if card can be moved to every tableau
             self.tableaus
                 .iter()
                 .enumerate()
@@ -124,8 +126,11 @@ impl Game {
         to_tableau_idx: usize,
     ) -> Option<Move> {
         let card = self.tableaus[from_tableau_idx].0[card_idx];
+        // Check if to tableau is empty
         if let Some(to_tableau_card) = self.tableaus[to_tableau_idx].0.last() {
             if Self::can_be_placed_on_top_of(*to_tableau_card, card) {
+                // If the card we are moving can be placed on top of the top card in to tableau,
+                // Add move to set
                 Some(Move {
                     from: CardPosition::Tableau((from_tableau_idx as u8, card_idx as u8)),
                     to: CardPosition::Tableau((
@@ -137,12 +142,10 @@ impl Game {
                 None
             }
         } else if is_king(card) {
+            // If to tableau is empty, the only card we can move there is a king
             Some(Move {
                 from: CardPosition::Tableau((from_tableau_idx as u8, card_idx as u8)),
-                to: CardPosition::Tableau((
-                    to_tableau_idx as u8,
-                    self.tableaus[to_tableau_idx].0.len() as u8,
-                )),
+                to: CardPosition::Tableau((to_tableau_idx as u8, 0 as u8)),
             })
         } else {
             None
@@ -153,23 +156,24 @@ impl Game {
         let mut set = HashSet::new();
         // Check first unlocked card
         let first_unlocked_idx = self.first_unlocked_idx[from_tableau_idx];
+        // If it exists
         if first_unlocked_idx != u8::MAX {
-            if self.is_card_unlocked(from_tableau_idx, first_unlocked_idx as usize) {
-                self.tableaus
-                    .iter()
-                    .enumerate()
-                    .for_each(|(to_tableau_idx, _)| {
-                        if from_tableau_idx != to_tableau_idx {
-                            if let Some(mv) = self.get_specific_move_between_tableaus(
-                                from_tableau_idx,
-                                first_unlocked_idx as usize,
-                                to_tableau_idx,
-                            ) {
-                                set.insert(mv);
-                            }
+            // Iterate trough every tableau
+            self.tableaus
+                .iter()
+                .enumerate()
+                .for_each(|(to_tableau_idx, _)| {
+                    if from_tableau_idx != to_tableau_idx {
+                        // If the tableaus are different, and I can move the stack between them, add to set
+                        if let Some(mv) = self.get_specific_move_between_tableaus(
+                            from_tableau_idx,
+                            first_unlocked_idx as usize,
+                            to_tableau_idx,
+                        ) {
+                            set.insert(mv);
                         }
-                    });
-            }
+                    }
+                });
 
             // Check rest of the stack, only if it opens a card that can move to a foundation
             for index in (first_unlocked_idx as usize + 1)..self.tableaus[from_tableau_idx].0.len()
@@ -191,12 +195,16 @@ impl Game {
                         });
                 }
             }
+        } else {
+            // The only way for there not to be unlocked cards is an empty tableau
+            assert!(self.tableaus[from_tableau_idx].0.is_empty());
         }
         set
     }
 
     fn get_move_from_tableau_to_foundation(&self, from_tableau_idx: usize) -> Option<Move> {
         if let Some(from_tableau_card) = self.tableaus[from_tableau_idx].0.last() {
+            // If the tableau is not empty, check if we can move that card to a foundation
             if self.can_move_card_to_foundation(*from_tableau_card) {
                 Some(Move {
                     from: CardPosition::Tableau((
@@ -215,13 +223,16 @@ impl Game {
 
     fn get_moves_from_tableau(&self) -> (HashSet<Move>, bool) {
         let mut set = HashSet::new();
+        // For every tableau
         for (from_tableau_idx, _) in self.tableaus.iter().enumerate() {
+            // Check if we can move the card to a foundation
             if let Some(mv) = self.get_move_from_tableau_to_foundation(from_tableau_idx) {
                 set.insert(mv);
                 if PRUNING {
                     return (set, true);
                 }
             }
+            // Get the moves from this tableau to another tableau
             set.extend(self.get_tableau_moves_from_tableau(from_tableau_idx));
         }
         (set, false)

@@ -24,3 +24,12 @@ Some(Move { from: Tableau((1, 1)), to: Tableau((3, 5)) })
 
 MISSING VALID MOVES:
 From: Tableau((2, 4)) - C2	To: Tableau((1, 1)) - DA
+
+
+[self.stock.0[51]]
+[self.stock.0[51 - 1], self.stock.0[51 - 7]]
+[self.stock.0[51 - 2], self.stock.0[51 - 8], self.stock.0[51 - 13],]
+[self.stock.0[51 - 3], self.stock.0[51 - 9], self.stock.0[51 - 14],self.stock.0[51 - 18]]
+[self.stock.0[51 - 4], self.stock.0[51 - 10], self.stock.0[51 - 15], self.stock.0[51 - 19], self.stock.0[51 - 22]]
+[self.stock.0[51 - 5], self.stock.0[51 - 11], self.stock.0[51 - 16], self.stock.0[51 - 20], self.stock.0[51 - 23], self.stock.0[51 - 25]]
+[self.stock.0[51 - 6], self.stock.0[51 - 12], self.stock.0[51 - 17], self.stock.0[51 - 21], self.stock.0[51 - 24], self.stock.0[51 - 26],self.stock.0[51 - 27],]

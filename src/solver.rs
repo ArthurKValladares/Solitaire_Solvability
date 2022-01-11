@@ -16,13 +16,19 @@ pub struct Solver {
     visited_games_states: HashSet<GameCompact>,
     states_to_visit: BinaryHeap<Game>,
     culled_state_count: usize,
+    game_overs_reached: usize,
+    max_score: usize,
 }
 
 impl Game {
     pub fn score(&self) -> usize {
-        self.foundations
+        let foundations_score = self
+            .foundations
             .iter()
             .fold(0, |acc, card| acc + card_rank(*card) as usize)
+            * 100;
+
+        foundations_score
     }
 
     pub fn compact_state(&self) -> GameCompact {
@@ -91,6 +97,8 @@ impl Solver {
             visited_games_states,
             states_to_visit,
             culled_state_count: 0,
+            game_overs_reached: 0,
+            max_score: 0,
         }
     }
 
@@ -108,17 +116,18 @@ impl Solver {
     pub fn is_solvable(&mut self) -> Option<Game> {
         println!("Original Game:\n{}", self.original_game);
         // TODO: Need to keep track of depth so that we can keep a stack of moves with the solution
-        let mut iter = 0;
         while !self.states_to_visit.is_empty() {
-            iter += 1;
             let new_state = self.states_to_visit.pop().unwrap();
-            if iter % 1000000 == 0 {
+            let new_score = new_state.score();
+            if new_score > self.max_score {
+                self.max_score = new_score;
                 println!("\nCurrent State:\n{}", new_state);
                 println!(
-                    "States Visited: {}, States to Visit: {}, Culled States: {}",
+                    "States Visited: {}, States to Visit: {}, Culled States: {}, Game Overs: {}",
                     self.visited_games_states.len(),
                     self.states_to_visit.len(),
-                    self.culled_state_count
+                    self.culled_state_count,
+                    self.game_overs_reached
                 );
             }
             if new_state.is_game_won() {
@@ -138,6 +147,8 @@ impl Solver {
                         self.culled_state_count += 1;
                     }
                 }
+            } else {
+                self.game_overs_reached += 1;
             }
         }
         None
