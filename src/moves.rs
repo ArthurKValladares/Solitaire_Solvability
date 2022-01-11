@@ -45,19 +45,21 @@ impl Move {
 }
 
 impl Game {
-    fn get_move_from_stock(&self) -> Move {
+    fn get_move_from_stock(&self) -> Option<Move> {
         // If stock is not empty we can draw, otherwise we can restock
         if !self.stock.0.is_empty() {
-            Move {
+            Some(Move {
                 from: CardPosition::Stock,
                 to: CardPosition::Waste,
-            }
-        } else {
+            })
+        } else if !self.waste.0.is_empty() {
             // Restock
-            Move {
+            Some(Move {
                 from: CardPosition::Waste,
                 to: CardPosition::Stock,
-            }
+            })
+        } else {
+            None
         }
     }
 
@@ -251,7 +253,9 @@ impl Game {
         if prune {
             return valid_moves;
         }
-        valid_moves.insert(self.get_move_from_stock());
+        if let Some(mv) = self.get_move_from_stock() {
+            valid_moves.insert(mv);
+        }
         valid_moves
     }
 }
