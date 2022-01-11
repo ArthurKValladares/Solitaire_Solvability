@@ -178,7 +178,7 @@ impl Game {
     //
 
     fn can_be_placed_on_top_of(bottom: Card, top: Card) -> bool {
-        are_card_ranks_sequential(bottom, top) && are_card_colors_different(bottom, top)
+        are_card_ranks_descending(bottom, top) && are_card_colors_different(bottom, top)
     }
 
     fn can_move_card_to_tableau(&self, card: Card, tableau_idx: usize) -> bool {
@@ -192,7 +192,7 @@ impl Game {
     fn can_move_card_to_foundation(&self, card: Card) -> bool {
         let top_foundation_card = self.foundations[suit_rank(card) as usize];
         if top_foundation_card != u8::MAX {
-            are_card_ranks_sequential(top_foundation_card, card)
+            are_card_ranks_ascending(top_foundation_card, card)
                 && are_card_suits_the_same(top_foundation_card, card)
         } else {
             card_rank(card) == 1

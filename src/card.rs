@@ -55,7 +55,11 @@ pub fn card_rank(card: Card) -> u8 {
     }
 }
 
-pub fn are_card_ranks_sequential(bottom: Card, top: Card) -> bool {
+pub fn are_card_ranks_ascending(bottom: Card, top: Card) -> bool {
+    card_rank(top) != 0 && card_rank(bottom) == (card_rank(top) - 1)
+}
+
+pub fn are_card_ranks_descending(bottom: Card, top: Card) -> bool {
     card_rank(bottom) == (card_rank(top) + 1)
 }
 
