@@ -298,7 +298,7 @@ impl Game {
 
 impl fmt::Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "\n--------- Foundations ---------")?;
+        writeln!(f, "--------- Foundations ---------")?;
         self.foundations
             .iter()
             .try_for_each(|card| write!(f, "[{}]\t", pretty_string(*card)))?;

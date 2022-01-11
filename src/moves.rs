@@ -190,31 +190,6 @@ impl Game {
         set
     }
 
-    fn get_tableau_moves_to_tableau(&self, to_tableau_idx: usize) -> HashSet<Move> {
-        let mut set = HashSet::new();
-        self.tableaus
-            .iter()
-            .enumerate()
-            .for_each(|(from_tableau_idx, from_tableau)| {
-                if from_tableau_idx != to_tableau_idx {
-                    for (card_idx, card) in
-                        self.tableaus[from_tableau_idx].0.iter().enumerate().rev()
-                    {
-                        if self.is_card_unlocked(from_tableau_idx, card_idx) {
-                            if let Some(mv) = self.get_specific_move_between_tableaus(
-                                from_tableau_idx,
-                                card_idx,
-                                to_tableau_idx,
-                            ) {
-                                set.insert(mv);
-                            }
-                        }
-                    }
-                }
-            });
-        set
-    }
-
     fn get_move_from_tableau_to_foundation(&self, from_tableau_idx: usize) -> Option<Move> {
         if let Some(from_tableau_card) = self.tableaus[from_tableau_idx].0.last() {
             if self.can_move_card_to_foundation(*from_tableau_card) {
@@ -248,57 +223,6 @@ impl Game {
         // ANOTHER TODO: We could parallelize some of this, sorta annoying tho.
         let mut valid_moves = HashSet::new();
         valid_moves.insert(self.get_move_from_stock());
-        /*
-        if let Some(prev_move) = &self.prev_move {
-            let Move { from, to } = prev_move;
-            match (from, to) {
-                (CardPosition::Stock, CardPosition::Waste) => {
-                    valid_moves.extend(self.get_moves_from_waste());
-                }
-                (CardPosition::Waste, CardPosition::Stock) => {}
-                (CardPosition::Waste, CardPosition::Foundation(_)) => {
-                    valid_moves.extend(self.get_moves_from_waste());
-                }
-                (CardPosition::Waste, CardPosition::Tableau((tableau_idx, _))) => {
-                    valid_moves.extend(self.get_moves_from_waste());
-                }
-                (CardPosition::Tableau((tableau_idx, _)), CardPosition::Foundation(_)) => {
-                    if let Some(mv) = self.get_move_from_waste_to_tableau(*tableau_idx as usize) {
-                        valid_moves.insert(mv);
-                    }
-                    valid_moves.extend(self.get_tableau_moves_from_tableau(*tableau_idx as usize));
-                    valid_moves.extend(self.get_tableau_moves_to_tableau(*tableau_idx as usize));
-                }
-                (
-                    CardPosition::Tableau((from_tableau_idx, _)),
-                    CardPosition::Tableau((to_tableau_idx, _)),
-                ) => {
-                    if let Some(mv) =
-                        self.get_move_from_waste_to_tableau(*from_tableau_idx as usize)
-                    {
-                        valid_moves.insert(mv);
-                    }
-                    if let Some(mv) = self.get_move_from_waste_to_tableau(*to_tableau_idx as usize)
-                    {
-                        valid_moves.insert(mv);
-                    }
-
-                    valid_moves
-                        .extend(self.get_tableau_moves_from_tableau(*from_tableau_idx as usize));
-                    valid_moves
-                        .extend(self.get_tableau_moves_to_tableau(*from_tableau_idx as usize));
-
-                    valid_moves
-                        .extend(self.get_tableau_moves_from_tableau(*to_tableau_idx as usize));
-                    valid_moves.extend(self.get_tableau_moves_to_tableau(*to_tableau_idx as usize));
-                }
-                _ => unreachable!(),
-            }
-        } else {
-            valid_moves.extend(self.get_moves_from_waste());
-            valid_moves.extend(self.get_moves_from_tableau());
-        }
-        */
         valid_moves.extend(self.get_moves_from_waste());
         valid_moves.extend(self.get_moves_from_tableau());
         valid_moves
