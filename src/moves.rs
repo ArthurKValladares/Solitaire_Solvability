@@ -147,7 +147,8 @@ impl Game {
     fn get_tableau_moves_from_tableau(&self, from_tableau_idx: usize) -> HashSet<Move> {
         let mut set = HashSet::new();
         // Check first unlocked card
-        if let Some(first_unlocked_idx) = self.first_unlocked_idx[from_tableau_idx] {
+        let first_unlocked_idx = self.first_unlocked_idx[from_tableau_idx];
+        if first_unlocked_idx != u8::MAX {
             if self.is_card_unlocked(from_tableau_idx, first_unlocked_idx as usize) {
                 self.tableaus
                     .iter()

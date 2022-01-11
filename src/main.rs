@@ -41,7 +41,7 @@ pub struct Game {
     // TODO: We can optimize this further
     // stock and waste will always add up to 52 at most, so they can share an array
     tableaus: [CardStack<20>; 7],
-    first_unlocked_idx: [Option<u8>; 7],
+    first_unlocked_idx: [u8; 7],
     foundations: [Card; 4],
     stock: CardStack<52>,
     waste: CardStack<52>,
@@ -73,12 +73,12 @@ impl Game {
 
     fn set_first_unlocked_index(&mut self, tableau_idx: usize) {
         if self.tableaus[tableau_idx].0.is_empty() {
-            self.first_unlocked_idx[tableau_idx] = None;
+            self.first_unlocked_idx[tableau_idx] = u8::MAX;
         } else {
-            self.first_unlocked_idx[tableau_idx] = Some(0);
+            self.first_unlocked_idx[tableau_idx] = 0;
             for (card_idx, _) in self.tableaus[tableau_idx].0.iter().enumerate().rev() {
                 if !self.is_card_unlocked(tableau_idx, card_idx) {
-                    self.first_unlocked_idx[tableau_idx] = Some(card_idx as u8 + 1);
+                    self.first_unlocked_idx[tableau_idx] = card_idx as u8 + 1;
                     break;
                 }
             }
