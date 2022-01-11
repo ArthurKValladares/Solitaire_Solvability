@@ -56,7 +56,7 @@ pub fn card_rank(card: Card) -> u8 {
 }
 
 pub fn are_card_ranks_sequential(bottom: Card, top: Card) -> bool {
-    card_rank(top) > 1 && card_rank(bottom) == (card_rank(top) - 1)
+    card_rank(bottom) == (card_rank(top) + 1)
 }
 
 pub fn are_card_colors_different(card1: Card, card2: Card) -> bool {
