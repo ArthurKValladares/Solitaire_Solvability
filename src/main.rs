@@ -12,8 +12,8 @@ use rand::{seq::SliceRandom, thread_rng};
 use solver::*;
 use std::{cmp::Ordering, fmt, time::Instant};
 
-const VERBOSE_PRINT: bool = true;
-const DEBUG: bool = true;
+const VERBOSE_PRINT: bool = false;
+const DEBUG: bool = false;
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct CardStack<const CAP: usize>(ArrayVec<Card, CAP>);
@@ -373,11 +373,37 @@ impl fmt::Display for Game {
 }
 
 fn main() {
-    println!("Game struct size: {}", std::mem::size_of::<Game>());
-    let mut solver = Solver::new();
-    let timer = Instant::now();
-    println!("Game: {:?}", solver.is_solvable());
-    println!("Elapsed Time: {}", timer.elapsed().as_millis() as f64);
+    let num_iters = 100;
+    let mut moving_average_dt = 0.0;
+    let mut moving_average_win = 0.0;
+    let mut moving_average_lose = 0.0;
+    let mut solved_games = 0;
+    for _ in 0..num_iters {
+        let mut solver = Solver::new();
+        let timer = Instant::now();
+        let is_solvable = solver.is_solvable().is_some();
+        let elapsed_time = timer.elapsed().as_millis() as f64;
+        println!(
+            "Is Solvable: {}\tElapsed Time: {}",
+            is_solvable, elapsed_time
+        );
+        moving_average_dt = moving_average_dt * 0.9 + elapsed_time * 0.1;
+        if is_solvable {
+            solved_games += 1;
+            moving_average_win = moving_average_win * 0.9 + elapsed_time * 0.1;
+        } else {
+            moving_average_lose = moving_average_lose * 0.9 + elapsed_time * 0.1;
+        }
+    }
+    println!("Evaluated {} Games", num_iters);
+    println!("Average Elapsed Time: {}", moving_average_dt);
+    println!("Average Elapsed Time Solvable: {}", moving_average_win);
+    println!("Average Elapsed Time Unsolvable: {}", moving_average_lose);
+    println!(
+        "Winnable Games: {}\tPercentage: {}",
+        solved_games,
+        solved_games as f32 / num_iters as f32
+    );
 }
 
 // TODO: Reduce symmetry in suit permutation

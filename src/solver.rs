@@ -1,9 +1,10 @@
-use crate::moves::CardPosition;
+use crate::{moves::CardPosition, VERBOSE_PRINT};
 
 use super::{card::*, moves::*, Game};
 use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashSet},
+    time::Instant,
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -114,12 +115,12 @@ impl Solver {
     }
 
     pub fn is_solvable(&mut self) -> Option<Game> {
-        println!("Original Game:\n{}", self.original_game);
+        let timer = Instant::now();
         // TODO: Need to keep track of depth so that we can keep a stack of moves with the solution
         while !self.states_to_visit.is_empty() {
             let new_state = self.states_to_visit.pop().unwrap();
             let new_score = new_state.score();
-            if new_score > self.max_score {
+            if new_score > self.max_score && VERBOSE_PRINT {
                 self.max_score = new_score;
                 println!("\nCurrent State:\n{}", new_state);
                 println!(
@@ -149,6 +150,11 @@ impl Solver {
                 }
             } else {
                 self.game_overs_reached += 1;
+            }
+            let elapsed_time = timer.elapsed().as_millis() as f64;
+            if elapsed_time >= 100.0 {
+                // Hacky return when it takes too long for now
+                return None;
             }
         }
         None
