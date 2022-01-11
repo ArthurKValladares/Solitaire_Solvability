@@ -13,6 +13,7 @@ pub struct Solver {
     original_game: Game,
     visited_games_states: HashSet<GameCompact>,
     states_to_visit: BinaryHeap<Game>,
+    culled_state_count: usize,
 }
 
 impl Game {
@@ -87,6 +88,7 @@ impl Solver {
             original_game,
             visited_games_states,
             states_to_visit,
+            culled_state_count: 0,
         }
     }
 
@@ -99,6 +101,12 @@ impl Solver {
             let new_state = self.states_to_visit.pop().unwrap();
             if iter % 1000000 == 0 {
                 println!("\nCurrent State:\n{}", new_state);
+                println!(
+                    "States Visited: {}, States to Visit: {}, Culled States: {}",
+                    self.visited_games_states.len(),
+                    self.states_to_visit.len(),
+                    self.culled_state_count
+                );
             }
             if new_state.is_game_won() {
                 return Some(new_state);
@@ -112,6 +120,8 @@ impl Solver {
                     .contains(&new_state_to_visit.compact_state())
                 {
                     self.states_to_visit.push(new_state_to_visit);
+                } else {
+                    self.culled_state_count += 1;
                 }
             }
         }

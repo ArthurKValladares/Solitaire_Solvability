@@ -38,8 +38,6 @@ impl<const CAP: usize> Ord for CardStack<CAP> {
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Game {
-    // TODO: We can optimize this further
-    // stock and waste will always add up to 52 at most, so they can share an array
     tableaus: [CardStack<20>; 7],
     first_unlocked_idx: [u8; 7],
     foundations: [Card; 4],
@@ -341,8 +339,7 @@ impl fmt::Display for Game {
                 .try_for_each(|mv| writeln!(f, "{}", mv.pretty_string(self)))?;
         }
         writeln!(f, "--------- Prev Move -----------")?;
-        writeln!(f, "{:?}", self.prev_move)?;
-        writeln!(f)
+        writeln!(f, "{:?}", self.prev_move)
     }
 }
 
