@@ -384,7 +384,7 @@ fn main() {
         let is_solvable = solver.is_solvable().is_some();
         let elapsed_time = timer.elapsed().as_millis() as f64;
         println!(
-            "Is Solvable: {}\tElapsed Time: {}",
+            "Is Solvable: {}\tElapsed Time: {}ms",
             is_solvable, elapsed_time
         );
         moving_average_dt = moving_average_dt * 0.9 + elapsed_time * 0.1;
@@ -396,9 +396,9 @@ fn main() {
         }
     }
     println!("Evaluated {} Games", num_iters);
-    println!("Average Elapsed Time: {}", moving_average_dt);
-    println!("Average Elapsed Time Solvable: {}", moving_average_win);
-    println!("Average Elapsed Time Unsolvable: {}", moving_average_lose);
+    println!("Average Elapsed Time: {}ms", moving_average_dt);
+    println!("Average Elapsed Time Solvable: {}ms", moving_average_win);
+    println!("Average Elapsed Time Unsolvable: {}ms", moving_average_lose);
     println!(
         "Winnable Games: {}\tPercentage: {}",
         solved_games,
