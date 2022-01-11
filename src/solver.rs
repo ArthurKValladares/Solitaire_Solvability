@@ -1,4 +1,6 @@
-use super::{card::*, Game};
+use crate::moves::CardPosition;
+
+use super::{card::*, moves::*, Game};
 use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashSet},
@@ -92,6 +94,17 @@ impl Solver {
         }
     }
 
+    pub fn is_game_lost(valid_moves: &HashSet<Move>) -> bool {
+        if valid_moves.len() == 1 {
+            valid_moves.contains(&Move {
+                from: CardPosition::Waste,
+                to: CardPosition::Stock,
+            })
+        } else {
+            false
+        }
+    }
+
     pub fn is_solvable(&mut self) -> Option<Game> {
         println!("Original Game:\n{}", self.original_game);
         // TODO: Need to keep track of depth so that we can keep a stack of moves with the solution
@@ -113,15 +126,17 @@ impl Solver {
             }
             self.visited_games_states.insert(new_state.compact_state());
             let valid_moves = new_state.valid_moves();
-            for valid_move in &valid_moves {
-                let new_state_to_visit = new_state.handle_move(valid_move);
-                if !self
-                    .visited_games_states
-                    .contains(&new_state_to_visit.compact_state())
-                {
-                    self.states_to_visit.push(new_state_to_visit);
-                } else {
-                    self.culled_state_count += 1;
+            if !Self::is_game_lost(&valid_moves) {
+                for valid_move in &valid_moves {
+                    let new_state_to_visit = new_state.handle_move(valid_move);
+                    if !self
+                        .visited_games_states
+                        .contains(&new_state_to_visit.compact_state())
+                    {
+                        self.states_to_visit.push(new_state_to_visit);
+                    } else {
+                        self.culled_state_count += 1;
+                    }
                 }
             }
         }

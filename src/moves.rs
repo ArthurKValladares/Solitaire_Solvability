@@ -1,6 +1,8 @@
 use crate::{card::*, Game};
 use std::collections::HashSet;
 
+const PRUNING: bool = true;
+
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum CardPosition {
     Stock,
@@ -88,7 +90,7 @@ impl Game {
         }
     }
 
-    fn get_moves_from_waste(&self) -> HashSet<Move> {
+    fn get_moves_from_waste(&self) -> (HashSet<Move>, bool) {
         let mut set = HashSet::new();
         if !self.waste.0.is_empty() {
             let card = self.waste.0.last().unwrap();
@@ -98,6 +100,9 @@ impl Game {
                     from: CardPosition::Waste,
                     to: CardPosition::Foundation(suit_rank(*card)),
                 });
+                if PRUNING {
+                    return (set, true);
+                }
             }
 
             self.tableaus
@@ -109,7 +114,7 @@ impl Game {
                     }
                 });
         };
-        set
+        (set, false)
     }
 
     fn get_specific_move_between_tableaus(
@@ -208,23 +213,34 @@ impl Game {
         }
     }
 
-    fn get_moves_from_tableau(&self) -> HashSet<Move> {
+    fn get_moves_from_tableau(&self) -> (HashSet<Move>, bool) {
         let mut set = HashSet::new();
         for (from_tableau_idx, _) in self.tableaus.iter().enumerate() {
             if let Some(mv) = self.get_move_from_tableau_to_foundation(from_tableau_idx) {
                 set.insert(mv);
+                if PRUNING {
+                    return (set, true);
+                }
             }
             set.extend(self.get_tableau_moves_from_tableau(from_tableau_idx));
         }
-        set
+        (set, false)
     }
 
     pub fn valid_moves(&self) -> HashSet<Move> {
         // ANOTHER TODO: We could parallelize some of this, sorta annoying tho.
         let mut valid_moves = HashSet::new();
+        let (waste_moves, prune) = self.get_moves_from_waste();
+        valid_moves.extend(waste_moves);
+        if prune {
+            return valid_moves;
+        }
+        let (tableau_moves, prune) = self.get_moves_from_tableau();
+        valid_moves.extend(tableau_moves);
+        if prune {
+            return valid_moves;
+        }
         valid_moves.insert(self.get_move_from_stock());
-        valid_moves.extend(self.get_moves_from_waste());
-        valid_moves.extend(self.get_moves_from_tableau());
         valid_moves
     }
 }
