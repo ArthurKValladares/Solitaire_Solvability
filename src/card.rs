@@ -5,6 +5,20 @@ pub const NUM_CARDS_SUIT: u8 = 13;
 
 pub type Card = u8;
 
+pub trait IsCard {
+    fn index(&self) -> u8;
+    fn is_face_up(&self) -> bool;
+}
+
+impl IsCard for Card {
+    fn index(&self) -> u8 {
+        self & 0b00111111
+    }
+    fn is_face_up(&self) -> bool {
+        (self & 0b01000000) == 0b01000000
+    }
+}
+
 pub const CLUBS_ACE: Card = 0;
 pub const CLUBS_KING: Card = 12;
 
@@ -18,19 +32,19 @@ pub const HEARTS_ACE: Card = 39;
 pub const HEARTS_KING: Card = 51;
 
 pub fn is_clubs(card: Card) -> bool {
-    card <= CLUBS_KING
+    card.index() <= CLUBS_KING
 }
 
 pub fn is_diamonds(card: Card) -> bool {
-    card >= DIAMONDS_ACE && card <= DIAMONDS_KING
+    card.index() >= DIAMONDS_ACE && card.index() <= DIAMONDS_KING
 }
 
 pub fn is_hearts(card: Card) -> bool {
-    card >= HEARTS_ACE && card <= HEARTS_KING
+    card.index() >= HEARTS_ACE && card.index() <= HEARTS_KING
 }
 
 pub fn is_spades(card: Card) -> bool {
-    card >= SPADES_ACE && card <= SPADES_KING
+    card.index() >= SPADES_ACE && card.index() <= SPADES_KING
 }
 
 pub fn is_red(card: Card) -> bool {
@@ -45,11 +59,12 @@ pub fn card_rank(card: Card) -> u8 {
     if card == u8::MAX {
         0
     } else {
-        match card {
-            CLUBS_ACE..=CLUBS_KING => card - CLUBS_ACE + 1,
-            DIAMONDS_ACE..=DIAMONDS_KING => card - DIAMONDS_ACE + 1,
-            HEARTS_ACE..=HEARTS_KING => card - HEARTS_ACE + 1,
-            SPADES_ACE..=SPADES_KING => card - SPADES_ACE + 1,
+        let card_index = card.index();
+        match card_index {
+            CLUBS_ACE..=CLUBS_KING => card_index - CLUBS_ACE + 1,
+            DIAMONDS_ACE..=DIAMONDS_KING => card_index - DIAMONDS_ACE + 1,
+            HEARTS_ACE..=HEARTS_KING => card_index - HEARTS_ACE + 1,
+            SPADES_ACE..=SPADES_KING => card_index - SPADES_ACE + 1,
             _ => unreachable!(),
         }
     }
@@ -74,11 +89,11 @@ pub fn are_card_suits_the_same(card1: Card, card2: Card) -> bool {
 }
 
 pub fn suit_rank(card: Card) -> u8 {
-    card / NUM_CARDS_SUIT
+    card.index() / NUM_CARDS_SUIT
 }
 
 pub fn is_king(card: Card) -> bool {
-    card % 13 == 12
+    card.index() % 13 == 12
 }
 
 pub fn ranking_of_kings() -> usize {
@@ -115,10 +130,14 @@ pub fn pretty_string(card: Card) -> String {
             _ => unreachable!(),
         };
         let ret_string = format!("{}{}", suit_string, rank_string);
-        if is_red(card) {
-            ret_string.red().to_string()
+        let mut colored = if is_red(card) {
+            ret_string.red()
         } else {
-            ret_string.yellow().to_string()
+            ret_string.yellow()
+        };
+        if !card.is_face_up() {
+            colored = colored.strikethrough();
         }
+        colored.to_string()
     }
 }

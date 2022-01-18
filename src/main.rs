@@ -12,7 +12,7 @@ use rand::{seq::SliceRandom, thread_rng};
 use solver::*;
 use std::{cmp::Ordering, fmt, time::Instant};
 
-const VERBOSE_PRINT: bool = false;
+const VERBOSE_PRINT: bool = true;
 const DEBUG: bool = false;
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]

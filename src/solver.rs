@@ -35,7 +35,7 @@ impl Game {
     pub fn compact_state(&self) -> GameCompact {
         let mut data = [u8::MAX; 52 + 4];
 
-        fn set_hihest_bit(bit: &mut u8) {
+        fn set_highest_bit(bit: &mut u8) {
             *bit = *bit | (1 << 7);
         }
 
@@ -45,26 +45,26 @@ impl Game {
         data[2] = self.foundations[2];
         data[3] = self.foundations[3];
         let mut idx = 4;
-        set_hihest_bit(&mut data[idx - 1]);
+        set_highest_bit(&mut data[idx - 1]);
 
         // Next few bytes are the stock
         let bytes_to_write = self.stock.0.len();
         data[idx..idx + bytes_to_write].copy_from_slice(&self.stock.0);
         idx += bytes_to_write;
-        set_hihest_bit(&mut data[idx - 1]);
+        set_highest_bit(&mut data[idx - 1]);
 
         // Then the waste
         let bytes_to_write = self.waste.0.len();
         data[idx..idx + bytes_to_write].copy_from_slice(&self.waste.0);
         idx += bytes_to_write;
-        set_hihest_bit(&mut data[idx - 1]);
+        set_highest_bit(&mut data[idx - 1]);
 
         // Then the tableaus
         for tableau in &self.tableaus {
             let bytes_to_write = tableau.0.len();
             data[idx..idx + bytes_to_write].copy_from_slice(&tableau.0);
             idx += bytes_to_write;
-            set_hihest_bit(&mut data[idx - 1]);
+            set_highest_bit(&mut data[idx - 1]);
         }
 
         GameCompact { data }
@@ -114,7 +114,21 @@ impl Solver {
         }
     }
 
+    pub fn log_state(&self, new_state: &Game, print_board: bool) {
+        if print_board {
+            println!("\nCurrent State:\n{}", new_state);
+        }
+        println!(
+            "States Visited: {}, States to Visit: {}, Culled States: {}, Game Overs: {}",
+            self.visited_games_states.len(),
+            self.states_to_visit.len(),
+            self.culled_state_count,
+            self.game_overs_reached
+        );
+    }
+
     pub fn is_solvable(&mut self) -> Option<Game> {
+        let cutoff_time = 1000.0;
         let timer = Instant::now();
         // TODO: Need to keep track of depth so that we can keep a stack of moves with the solution
         while !self.states_to_visit.is_empty() {
@@ -122,16 +136,10 @@ impl Solver {
             let new_score = new_state.score();
             if new_score > self.max_score && VERBOSE_PRINT {
                 self.max_score = new_score;
-                println!("\nCurrent State:\n{}", new_state);
-                println!(
-                    "States Visited: {}, States to Visit: {}, Culled States: {}, Game Overs: {}",
-                    self.visited_games_states.len(),
-                    self.states_to_visit.len(),
-                    self.culled_state_count,
-                    self.game_overs_reached
-                );
+                self.log_state(&new_state, true);
             }
             if new_state.is_game_won() {
+                self.log_state(&new_state, false);
                 return Some(new_state);
             }
             self.visited_games_states.insert(new_state.compact_state());
@@ -152,7 +160,7 @@ impl Solver {
                 self.game_overs_reached += 1;
             }
             let elapsed_time = timer.elapsed().as_millis() as f64;
-            if elapsed_time >= 100.0 {
+            if elapsed_time >= cutoff_time {
                 // Hacky return when it takes too long for now
                 return None;
             }
