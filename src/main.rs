@@ -215,7 +215,7 @@ impl Game {
         } else {
             let card = self.tableaus[tableau_idx].0[card_idx];
             let card_above = self.tableaus[tableau_idx].0[card_idx + 1];
-            Self::can_be_placed_on_top_of(card, card_above)
+            card.is_face_up() && Self::can_be_placed_on_top_of(card, card_above)
         }
     }
 
