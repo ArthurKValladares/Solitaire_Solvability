@@ -1,11 +1,7 @@
 use crate::{moves::CardPosition, VERBOSE_PRINT};
 
 use super::{card::*, moves::*, Game};
-use std::{
-    cmp::Ordering,
-    collections::{BinaryHeap, HashSet},
-    time::Instant,
-};
+use std::{collections::HashSet, time::Instant};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct GameCompact {
@@ -15,23 +11,13 @@ pub struct GameCompact {
 pub struct Solver {
     original_game: Game,
     visited_games_states: HashSet<GameCompact>,
-    states_to_visit: BinaryHeap<Game>,
+    states_to_visit: Vec<(u32, Game)>,
+    moves_made: Vec<Move>,
     culled_state_count: usize,
     game_overs_reached: usize,
-    max_score: usize,
 }
 
 impl Game {
-    pub fn score(&self) -> usize {
-        let foundations_score = self
-            .foundations
-            .iter()
-            .fold(0, |acc, card| acc + card_rank(*card) as usize)
-            * 100;
-
-        foundations_score
-    }
-
     pub fn compact_state(&self) -> GameCompact {
         let sorted_game = self.sort_tableaus();
 
@@ -73,35 +59,23 @@ impl Game {
     }
 }
 
-impl PartialOrd for Game {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.score().cmp(&other.score()))
-    }
-}
-
-impl Ord for Game {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.score().cmp(&other.score())
-    }
-}
-
 impl Solver {
     pub fn new() -> Self {
         let original_game = Game::new();
         let mut visited_games_states = HashSet::new();
         visited_games_states.insert(original_game.compact_state());
-        let mut states_to_visit = BinaryHeap::new();
+        let mut states_to_visit = Vec::new();
         let valid_moves = original_game.valid_moves();
         for valid_move in &valid_moves {
-            states_to_visit.push(original_game.handle_move(valid_move));
+            states_to_visit.push((1, original_game.handle_move(valid_move)));
         }
         Self {
             original_game,
             visited_games_states,
             states_to_visit,
+            moves_made: Vec::new(),
             culled_state_count: 0,
             game_overs_reached: 0,
-            max_score: 0,
         }
     }
 
@@ -116,8 +90,9 @@ impl Solver {
         }
     }
 
-    pub fn log_state(&self, new_state: &Game, print_board: bool) {
-        if print_board {
+    pub fn log_state(&self, new_state: &Game) {
+        if VERBOSE_PRINT {
+            println!("\nOriginal Game:\n{}", self.original_game);
             println!("\nCurrent State:\n{}", new_state);
         }
         println!(
@@ -125,23 +100,36 @@ impl Solver {
             self.visited_games_states.len(),
             self.states_to_visit.len(),
             self.culled_state_count,
-            self.game_overs_reached
+            self.game_overs_reached,
         );
+        if VERBOSE_PRINT {
+            println!("Move Made:");
+            for mv in &self.moves_made {
+                println!("{:?}", mv);
+            }
+        }
     }
 
     pub fn is_solvable(&mut self) -> Option<Game> {
         let cutoff_time = 1000.0;
         let timer = Instant::now();
-        // TODO: Need to keep track of depth so that we can keep a stack of moves with the solution
+        let mut current_depth = 0;
         while !self.states_to_visit.is_empty() {
-            let new_state = self.states_to_visit.pop().unwrap();
-            let new_score = new_state.score();
-            if new_score > self.max_score && VERBOSE_PRINT {
-                self.max_score = new_score;
-                self.log_state(&new_state, true);
+            let (new_depth, new_state) = self.states_to_visit.pop().unwrap();
+            if new_depth > current_depth {
+                self.moves_made.push(new_state.prev_move.unwrap());
+            } else {
+                let depth_diff = current_depth - new_depth;
+                for _ in 0..depth_diff + 1 {
+                    self.moves_made.pop();
+                }
+            }
+            current_depth = new_depth;
+            if VERBOSE_PRINT {
+                self.log_state(&new_state);
             }
             if new_state.is_game_won() {
-                self.log_state(&new_state, false);
+                self.log_state(&new_state);
                 return Some(new_state);
             }
             self.visited_games_states.insert(new_state.compact_state());
@@ -153,7 +141,8 @@ impl Solver {
                         .visited_games_states
                         .contains(&new_state_to_visit.compact_state())
                     {
-                        self.states_to_visit.push(new_state_to_visit);
+                        self.states_to_visit
+                            .push((current_depth + 1, new_state_to_visit));
                     } else {
                         self.culled_state_count += 1;
                     }

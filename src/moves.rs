@@ -1,7 +1,7 @@
 use crate::{card::*, Game};
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt};
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub enum CardPosition {
     Stock,
     Waste,
@@ -10,7 +10,7 @@ pub enum CardPosition {
     Tableau((u8, u8)),
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Move {
     pub from: CardPosition,
     pub to: CardPosition,
