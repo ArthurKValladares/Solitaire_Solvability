@@ -8,6 +8,8 @@ pub type Card = u8;
 pub trait IsCard {
     fn index(&self) -> u8;
     fn is_face_up(&self) -> bool;
+    fn face_up(&self) -> Self;
+    fn face_down(&self) -> Self;
 }
 
 impl IsCard for Card {
@@ -15,7 +17,13 @@ impl IsCard for Card {
         self & 0b00111111
     }
     fn is_face_up(&self) -> bool {
-        (self & 0b01000000) == 0b01000000
+        (self & 0b01000000) == 0b00000000
+    }
+    fn face_up(&self) -> Self {
+        *self & 0b10111111
+    }
+    fn face_down(&self) -> Self {
+        *self | 0b01000000
     }
 }
 
@@ -136,7 +144,7 @@ pub fn pretty_string(card: Card) -> String {
             ret_string.yellow()
         };
         if !card.is_face_up() {
-            colored = colored.strikethrough();
+            colored = colored.dimmed();
         }
         colored.to_string()
     }

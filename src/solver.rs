@@ -33,6 +33,8 @@ impl Game {
     }
 
     pub fn compact_state(&self) -> GameCompact {
+        let sorted_game = self.sort_tableaus();
+
         let mut data = [u8::MAX; 52 + 4];
 
         fn set_highest_bit(bit: &mut u8) {
@@ -40,27 +42,27 @@ impl Game {
         }
 
         // First 4 bytes are the foundations
-        data[0] = self.foundations[0];
-        data[1] = self.foundations[1];
-        data[2] = self.foundations[2];
-        data[3] = self.foundations[3];
+        data[0] = sorted_game.foundations[0];
+        data[1] = sorted_game.foundations[1];
+        data[2] = sorted_game.foundations[2];
+        data[3] = sorted_game.foundations[3];
         let mut idx = 4;
         set_highest_bit(&mut data[idx - 1]);
 
         // Next few bytes are the stock
-        let bytes_to_write = self.stock.0.len();
-        data[idx..idx + bytes_to_write].copy_from_slice(&self.stock.0);
+        let bytes_to_write = sorted_game.stock.0.len();
+        data[idx..idx + bytes_to_write].copy_from_slice(&sorted_game.stock.0);
         idx += bytes_to_write;
         set_highest_bit(&mut data[idx - 1]);
 
         // Then the waste
-        let bytes_to_write = self.waste.0.len();
-        data[idx..idx + bytes_to_write].copy_from_slice(&self.waste.0);
+        let bytes_to_write = sorted_game.waste.0.len();
+        data[idx..idx + bytes_to_write].copy_from_slice(&sorted_game.waste.0);
         idx += bytes_to_write;
         set_highest_bit(&mut data[idx - 1]);
 
         // Then the tableaus
-        for tableau in &self.tableaus {
+        for tableau in &sorted_game.tableaus {
             let bytes_to_write = tableau.0.len();
             data[idx..idx + bytes_to_write].copy_from_slice(&tableau.0);
             idx += bytes_to_write;

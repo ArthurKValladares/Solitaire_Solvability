@@ -12,7 +12,7 @@ use rand::{seq::SliceRandom, thread_rng};
 use solver::*;
 use std::{cmp::Ordering, fmt, time::Instant};
 
-const VERBOSE_PRINT: bool = true;
+const VERBOSE_PRINT: bool = false;
 const DEBUG: bool = false;
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
@@ -21,6 +21,12 @@ pub struct CardStack<const CAP: usize>(ArrayVec<Card, CAP>);
 impl<const CAP: usize> CardStack<CAP> {
     pub fn score(&self) -> u8 {
         *self.0.first().unwrap_or(&u8::MAX)
+    }
+
+    pub fn flip_face_up(&mut self) {
+        if !self.0.is_empty() {
+            *self.0.last_mut().unwrap() = self.0.last().unwrap().face_up();
+        }
     }
 }
 
@@ -82,13 +88,15 @@ impl Game {
         }
     }
 
-    fn sort_tableaus(&mut self) {
+    fn sort_tableaus(&self) -> Self {
+        let mut new_game = self.clone();
         // This trick helps reduce the problem space by eliminating symmetrical setups
-        self.tableaus.sort();
+        new_game.tableaus.sort();
         // we need to reset first unlocked when we sort.
         for idx in 0..7 {
-            self.set_first_unlocked_index(idx)
+            new_game.set_first_unlocked_index(idx)
         }
+        new_game
     }
 
     fn set_stock(&mut self) {
@@ -117,60 +125,62 @@ impl Game {
             .expect("Could extend tableau");
         self.tableaus[1]
             .0
-            .try_extend_from_slice(&[self.stock.0[51 - 1], self.stock.0[51 - 7]])
+            .try_extend_from_slice(&[self.stock.0[51 - 1].face_down(), self.stock.0[51 - 7]])
             .expect("Could extend tableau");
         self.tableaus[2]
             .0
             .try_extend_from_slice(&[
-                self.stock.0[51 - 2],
-                self.stock.0[51 - 8],
+                self.stock.0[51 - 2].face_down(),
+                self.stock.0[51 - 8].face_down(),
                 self.stock.0[51 - 13],
             ])
             .expect("Could extend tableau");
         self.tableaus[3]
             .0
             .try_extend_from_slice(&[
-                self.stock.0[51 - 3],
-                self.stock.0[51 - 9],
-                self.stock.0[51 - 14],
+                self.stock.0[51 - 3].face_down(),
+                self.stock.0[51 - 9].face_down(),
+                self.stock.0[51 - 14].face_down(),
                 self.stock.0[51 - 18],
             ])
             .expect("Could extend tableau");
         self.tableaus[4]
             .0
             .try_extend_from_slice(&[
-                self.stock.0[51 - 4],
-                self.stock.0[51 - 10],
-                self.stock.0[51 - 15],
-                self.stock.0[51 - 19],
+                self.stock.0[51 - 4].face_down(),
+                self.stock.0[51 - 10].face_down(),
+                self.stock.0[51 - 15].face_down(),
+                self.stock.0[51 - 19].face_down(),
                 self.stock.0[51 - 22],
             ])
             .expect("Could extend tableau");
         self.tableaus[5]
             .0
             .try_extend_from_slice(&[
-                self.stock.0[51 - 5],
-                self.stock.0[51 - 11],
-                self.stock.0[51 - 16],
-                self.stock.0[51 - 20],
-                self.stock.0[51 - 23],
+                self.stock.0[51 - 5].face_down(),
+                self.stock.0[51 - 11].face_down(),
+                self.stock.0[51 - 16].face_down(),
+                self.stock.0[51 - 20].face_down(),
+                self.stock.0[51 - 23].face_down(),
                 self.stock.0[51 - 25],
             ])
             .expect("Could extend tableau");
         self.tableaus[6]
             .0
             .try_extend_from_slice(&[
-                self.stock.0[51 - 6],
-                self.stock.0[51 - 12],
-                self.stock.0[51 - 17],
-                self.stock.0[51 - 21],
-                self.stock.0[51 - 24],
-                self.stock.0[51 - 26],
+                self.stock.0[51 - 6].face_down(),
+                self.stock.0[51 - 12].face_down(),
+                self.stock.0[51 - 17].face_down(),
+                self.stock.0[51 - 21].face_down(),
+                self.stock.0[51 - 24].face_down(),
+                self.stock.0[51 - 26].face_down(),
                 self.stock.0[51 - 27],
             ])
             .expect("Could extend tableau");
+        for tableau_idx in 0..7 {
+            self.set_first_unlocked_index(tableau_idx);
+        }
         self.stock.0.truncate(NUM_CARDS_DECK as usize - 28);
-        self.sort_tableaus();
     }
 
     //
@@ -281,13 +291,11 @@ impl Game {
             .0
             .pop()
             .expect("Popped empty tableau");
+        new_game.tableaus[tableau_idx as usize].flip_face_up();
         new_game.foundations[suit_rank(card) as usize] = card;
-        // If we the tableau is now empty, we need to sort the tableaus
-        if new_game.tableaus[tableau_idx as usize].0.is_empty() {
-            new_game.sort_tableaus();
-        } else {
-            new_game.set_first_unlocked_index(tableau_idx as usize);
-        }
+
+        new_game.set_first_unlocked_index(tableau_idx as usize);
+
         new_game.foundation_stack |= 1 << card;
         new_game
     }
@@ -297,9 +305,9 @@ impl Game {
         new_game.tableaus[tableau_idx as usize]
             .0
             .push(new_game.waste.0.pop().expect("Popped empty waste"));
-        // If we the tableau now only has 1 card, we need to sort the tableaus
+
         if new_game.tableaus[tableau_idx as usize].0.len() == 1 {
-            new_game.sort_tableaus();
+            new_game.set_first_unlocked_index(tableau_idx as usize);
         }
         new_game
     }
@@ -310,17 +318,16 @@ impl Game {
             .0
             .drain((card_idx as usize)..)
             .collect::<Vec<_>>();
-        let to_prev_len = new_game.tableaus[to_index as usize].0.len();
+
         new_game.tableaus[to_index as usize].0.extend(drain_iter);
         new_game.tableaus[from_index as usize]
             .0
             .truncate(card_idx as usize);
-        // If from tableau is empty or the to tableau was empty, we need to sort the tableaus
-        if new_game.tableaus[from_index as usize].0.is_empty() || to_prev_len == 0 {
-            new_game.sort_tableaus();
-        } else {
-            new_game.set_first_unlocked_index(from_index as usize);
-        }
+        new_game.tableaus[from_index as usize].flip_face_up();
+
+        new_game.set_first_unlocked_index(from_index as usize);
+        new_game.set_first_unlocked_index(to_index as usize);
+
         new_game
     }
 }
