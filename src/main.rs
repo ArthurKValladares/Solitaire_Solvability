@@ -7,8 +7,9 @@ mod solver;
 
 use arrayvec::ArrayVec;
 use card::*;
+use mersenne_twister::MT19937;
 use moves::*;
-use rand::{seq::SliceRandom, thread_rng};
+use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
 use solver::*;
 use std::{cmp::Ordering, fmt, time::Instant};
@@ -53,6 +54,8 @@ pub struct Game {
     stock: CardStack<52>,
     waste: CardStack<52>,
     prev_move: Option<Move>,
+    random_engine: MT19937,
+    pub random_seed: u32,
 }
 
 impl Game {
@@ -101,8 +104,11 @@ impl Game {
     }
 
     fn set_stock(&mut self) {
+        let mut rng = rand::thread_rng();
+        self.random_seed = rng.gen();
+        self.random_engine.reseed(self.random_seed);
         self.stock.0 = (0..NUM_CARDS_DECK).collect::<ArrayVec<Card, 52>>();
-        self.stock.0.shuffle(&mut thread_rng());
+        self.random_engine.shuffle(&mut self.stock.0);
     }
 
     fn set_first_unlocked_index(&mut self, tableau_idx: usize) {
@@ -380,18 +386,30 @@ impl fmt::Display for Game {
     }
 }
 
+#[derive(Debug)]
+pub struct GameResult {
+    solvable: bool,
+    seed: u32,
+}
+
 fn main() {
     let timer = Instant::now();
-    let num_iters = 100;
+    let num_iters = 1000;
     let games = (0..num_iters)
         .into_par_iter()
         .map(|_| {
             let mut solver = Solver::new();
             let is_solvable = solver.is_solvable().is_some();
-            is_solvable
+            (is_solvable, solver.game_seed())
         })
         .collect::<Vec<_>>();
-    println!("{:#?}", games);
+    let won_games = games
+        .into_iter()
+        .filter(|(won, _)| *won)
+        .map(|(_, seed)| seed)
+        .collect::<Vec<_>>();
+    println!("{:#?}", won_games);
+    println!("% Won Games: {}", won_games.len() as f32 / num_iters as f32);
 }
 
 // TODO: Reduce symmetry in suit permutation

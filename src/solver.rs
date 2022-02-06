@@ -79,6 +79,10 @@ impl Solver {
         }
     }
 
+    pub fn game_seed(&self) -> u32 {
+        self.original_game.random_seed
+    }
+
     pub fn is_game_lost(valid_moves: &HashSet<Move>) -> bool {
         if valid_moves.len() == 1 {
             valid_moves.contains(&Move {
@@ -111,7 +115,7 @@ impl Solver {
     }
 
     pub fn is_solvable(&mut self) -> Option<Game> {
-        let cutoff_time = 1000.0;
+        let cutoff_time = 5000.0;
         let timer = Instant::now();
         let mut current_depth = 0;
         while !self.states_to_visit.is_empty() {
