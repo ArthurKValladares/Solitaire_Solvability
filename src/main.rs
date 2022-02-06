@@ -9,6 +9,7 @@ use arrayvec::ArrayVec;
 use card::*;
 use moves::*;
 use rand::{seq::SliceRandom, thread_rng};
+use rayon::prelude::*;
 use solver::*;
 use std::{cmp::Ordering, fmt, time::Instant};
 
@@ -380,37 +381,17 @@ impl fmt::Display for Game {
 }
 
 fn main() {
+    let timer = Instant::now();
     let num_iters = 100;
-    let mut moving_average_dt = 0.0;
-    let mut moving_average_win = 0.0;
-    let mut moving_average_lose = 0.0;
-    let mut solved_games = 0;
-    for _ in 0..num_iters {
-        let mut solver = Solver::new();
-        let timer = Instant::now();
-        let is_solvable = solver.is_solvable().is_some();
-        let elapsed_time = timer.elapsed().as_millis() as f64;
-        println!(
-            "Is Solvable: {}\tElapsed Time: {}ms",
-            is_solvable, elapsed_time
-        );
-        moving_average_dt = moving_average_dt * 0.9 + elapsed_time * 0.1;
-        if is_solvable {
-            solved_games += 1;
-            moving_average_win = moving_average_win * 0.9 + elapsed_time * 0.1;
-        } else {
-            moving_average_lose = moving_average_lose * 0.9 + elapsed_time * 0.1;
-        }
-    }
-    println!("Evaluated {} Games", num_iters);
-    println!("Average Elapsed Time: {}ms", moving_average_dt);
-    println!("Average Elapsed Time Solvable: {}ms", moving_average_win);
-    println!("Average Elapsed Time Unsolvable: {}ms", moving_average_lose);
-    println!(
-        "Winnable Games: {}\tPercentage: {}",
-        solved_games,
-        solved_games as f32 / num_iters as f32
-    );
+    let games = (0..num_iters)
+        .into_par_iter()
+        .map(|_| {
+            let mut solver = Solver::new();
+            let is_solvable = solver.is_solvable().is_some();
+            is_solvable
+        })
+        .collect::<Vec<_>>();
+    println!("{:#?}", games);
 }
 
 // TODO: Reduce symmetry in suit permutation
