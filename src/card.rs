@@ -5,6 +5,14 @@ pub const NUM_CARDS_SUIT: u8 = 13;
 
 pub type Card = u8;
 
+fn abs_diff(a: u8, b: u8) -> u8 {
+    if a > b {
+        a - b
+    } else {
+        b - a
+    }
+}
+
 pub trait IsCard {
     fn index(&self) -> u8;
     fn is_face_up(&self) -> bool;
@@ -93,7 +101,7 @@ pub fn are_card_colors_different(card1: Card, card2: Card) -> bool {
 pub fn are_card_suits_the_same(card1: Card, card2: Card) -> bool {
     let card_rank_1 = card_rank(card1);
     let card_rank_2 = card_rank(card2);
-    card_rank_1.abs_diff(card_rank_2) <= 12 && !are_card_colors_different(card1, card2)
+    abs_diff(card_rank_1, card_rank_2) <= 12 && !are_card_colors_different(card1, card2)
 }
 
 pub fn suit_rank(card: Card) -> u8 {

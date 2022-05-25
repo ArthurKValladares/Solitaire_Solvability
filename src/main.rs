@@ -1,6 +1,3 @@
-#![feature(int_abs_diff)]
-#![feature(int_log)]
-
 mod card;
 mod moves;
 mod solver;
@@ -12,7 +9,7 @@ use moves::*;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
 use solver::*;
-use std::{cmp::Ordering, fmt, time::Instant};
+use std::{cmp::Ordering, fmt};
 
 const VERBOSE_PRINT: bool = false;
 const DEBUG: bool = false;
@@ -71,14 +68,14 @@ impl Game {
     fn validate(&self) {
         let mut game_stack: u64 = 0;
         for card in &self.stock.0 {
-            game_stack |= 1 << card;
+            game_stack |= 1 << card.face_up();
         }
         for card in &self.waste.0 {
-            game_stack |= 1 << card;
+            game_stack |= 1 << card.face_up();
         }
         for tableau in &self.tableaus {
             for card in &tableau.0 {
-                game_stack |= 1 << card;
+                game_stack |= 1 << card.face_up();
             }
         }
         let full_game_stack = self.foundation_stack | game_stack;
@@ -86,7 +83,7 @@ impl Game {
             println!("Invalid Game State:\n{}", self);
             let missing_bit = full_game_stack
                 ^ 0b0000000000001111111111111111111111111111111111111111111111111111;
-            let card = missing_bit.log2();
+            let card = (missing_bit as f64).log2() as u32;
             println!("Missing card: {}", pretty_string(card as u8));
             panic!("Invalid state");
         }
@@ -129,11 +126,11 @@ impl Game {
         self.tableaus[0]
             .0
             .try_extend_from_slice(&[self.stock.0[51]])
-            .expect("Could extend tableau");
+            .expect("Could not extend tableau");
         self.tableaus[1]
             .0
             .try_extend_from_slice(&[self.stock.0[51 - 1].face_down(), self.stock.0[51 - 7]])
-            .expect("Could extend tableau");
+            .expect("Could not  extend tableau");
         self.tableaus[2]
             .0
             .try_extend_from_slice(&[
@@ -141,7 +138,7 @@ impl Game {
                 self.stock.0[51 - 8].face_down(),
                 self.stock.0[51 - 13],
             ])
-            .expect("Could extend tableau");
+            .expect("Could not extend tableau");
         self.tableaus[3]
             .0
             .try_extend_from_slice(&[
@@ -150,7 +147,7 @@ impl Game {
                 self.stock.0[51 - 14].face_down(),
                 self.stock.0[51 - 18],
             ])
-            .expect("Could extend tableau");
+            .expect("Could not extend tableau");
         self.tableaus[4]
             .0
             .try_extend_from_slice(&[
@@ -160,7 +157,7 @@ impl Game {
                 self.stock.0[51 - 19].face_down(),
                 self.stock.0[51 - 22],
             ])
-            .expect("Could extend tableau");
+            .expect("Could not extend tableau");
         self.tableaus[5]
             .0
             .try_extend_from_slice(&[
@@ -171,7 +168,7 @@ impl Game {
                 self.stock.0[51 - 23].face_down(),
                 self.stock.0[51 - 25],
             ])
-            .expect("Could extend tableau");
+            .expect("Could not extend tableau");
         self.tableaus[6]
             .0
             .try_extend_from_slice(&[
@@ -183,7 +180,7 @@ impl Game {
                 self.stock.0[51 - 26].face_down(),
                 self.stock.0[51 - 27],
             ])
-            .expect("Could extend tableau");
+            .expect("Could not extend tableau");
         for tableau_idx in 0..7 {
             self.set_first_unlocked_index(tableau_idx);
         }
@@ -393,7 +390,6 @@ pub struct GameResult {
 }
 
 fn main() {
-    let timer = Instant::now();
     let num_iters = 1000;
     let games = (0..num_iters)
         .into_par_iter()

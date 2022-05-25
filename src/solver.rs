@@ -94,7 +94,7 @@ impl Solver {
         }
     }
 
-    pub fn log_state(&self, new_state: &Game) {
+    pub fn log_state(&self, new_state: &Game, print_moves: bool) {
         if VERBOSE_PRINT {
             println!("\nOriginal Game:\n{}", self.original_game);
             println!("\nCurrent State:\n{}", new_state);
@@ -106,7 +106,7 @@ impl Solver {
             self.culled_state_count,
             self.game_overs_reached,
         );
-        if VERBOSE_PRINT {
+        if VERBOSE_PRINT && print_moves {
             println!("Move Made:");
             for mv in &self.moves_made {
                 println!("{:?}", mv);
@@ -130,10 +130,10 @@ impl Solver {
             }
             current_depth = new_depth;
             if VERBOSE_PRINT {
-                self.log_state(&new_state);
+                self.log_state(&new_state, false);
             }
             if new_state.is_game_won() {
-                self.log_state(&new_state);
+                self.log_state(&new_state, true);
                 return Some(new_state);
             }
             self.visited_games_states.insert(new_state.compact_state());
