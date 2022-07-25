@@ -121,6 +121,10 @@ impl Solver {
         }
     }
 
+    pub fn log_original_state(&self) {
+        println!("{}", self.original_game);
+    }
+
     pub fn is_solvable(mut self) -> Option<Self> {
         let cutoff_time = 5000.0;
         let timer = Instant::now();

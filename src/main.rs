@@ -328,6 +328,11 @@ impl Game {
 
 impl fmt::Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(
+            f,
+            "================== SEED: {:?} ==================",
+            self.random_seed
+        )?;
         writeln!(f, "--------- Foundations ---------")?;
         self.foundations
             .iter()
@@ -385,6 +390,14 @@ fn main() {
         .map(|_| Solver::new().is_solvable())
         .filter_map(|solver| solver)
         .collect::<Vec<_>>();
+
+    static PRINT_ORIGINAL_STATE: bool = false;
+    if PRINT_ORIGINAL_STATE {
+        for solver in &solvers {
+            solver.log_original_state()
+        }
+    }
+
     let solvable_games = SolvableGames { solvers };
     let json_string =
         serde_json::to_string_pretty(&solvable_games).expect("could not create json string");
