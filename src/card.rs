@@ -67,8 +67,9 @@ pub fn is_red(card: Card) -> bool {
     is_diamonds(card) || is_hearts(card)
 }
 
-pub fn is_yellow(card: Card) -> bool {
-    !is_red(card)
+#[allow(dead_code)]
+pub fn is_black(card: Card) -> bool {
+    is_clubs(card) || is_spades(card)
 }
 
 pub fn card_rank(card: Card) -> u8 {

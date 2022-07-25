@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::{card::*, Game};
-use std::{collections::HashSet, fmt};
+use std::collections::HashSet;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Serialize)]
 pub enum CardPosition {
@@ -235,7 +235,6 @@ impl Game {
     }
 
     pub fn valid_moves(&self) -> HashSet<Move> {
-        // ANOTHER TODO: We could parallelize some of this, sorta annoying tho.
         let mut valid_moves = HashSet::new();
         valid_moves.extend(self.get_moves_from_waste());
         valid_moves.extend(self.get_moves_from_tableau());

@@ -224,16 +224,13 @@ impl Game {
         }
     }
 
-    fn can_draw_from_stock(&self, count: usize) -> bool {
-        self.stock.0.len() >= count
-    }
-
     fn is_game_won(&self) -> bool {
         self.foundations
             .iter()
             .fold(0, |acc, card| acc + card_rank(*card) as usize)
             == ranking_of_kings()
     }
+
     //
     // Actions
     //
