@@ -14,7 +14,7 @@ pub struct GameCompact {
 pub struct Solver {
     #[serde(skip_serializing)]
     original_game: Game,
-    random_seed: u32,
+    pub random_seed: u32,
     #[serde(skip_serializing)]
     visited_games_states: HashSet<GameCompact>,
     #[serde(skip_serializing)]

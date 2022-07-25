@@ -383,8 +383,13 @@ struct SolvableGames {
     solvers: Vec<Solver>,
 }
 
+#[derive(Serialize)]
+struct CompactSolvable {
+    seeds: Vec<u32>,
+}
+
 fn main() {
-    let num_iters = 20;
+    let num_iters = 100;
     let solvers = (0..num_iters)
         .into_par_iter()
         .map(|_| Solver::new().is_solvable())
@@ -397,6 +402,12 @@ fn main() {
             solver.log_original_state()
         }
     }
+
+    let seeds = solvers.iter().map(|solver| solver.random_seed).collect();
+    let compact_solvable = CompactSolvable { seeds };
+    let json_string =
+        serde_json::to_string_pretty(&compact_solvable).expect("could not create json string");
+    std::fs::write("compact_solvable_games.json", &json_string).expect("could not write json file");
 
     let solvable_games = SolvableGames { solvers };
     let json_string =
