@@ -196,14 +196,6 @@ impl Game {
         are_card_ranks_descending(bottom, top) && are_card_colors_different(bottom, top)
     }
 
-    fn can_move_card_to_tableau(&self, card: Card, tableau_idx: usize) -> bool {
-        if let Some(top_tableau_card) = self.tableaus[tableau_idx].0.last() {
-            Self::can_be_placed_on_top_of(*top_tableau_card, card)
-        } else {
-            false
-        }
-    }
-
     fn can_move_card_to_foundation(&self, card: Card) -> bool {
         let top_foundation_card = self.foundations[suit_rank(card) as usize];
         if top_foundation_card != u8::MAX {
