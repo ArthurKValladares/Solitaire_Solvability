@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 use crate::{moves::CardPosition, VERBOSE_PRINT};
 
 use super::{card::*, moves::*, Game};
@@ -8,12 +10,19 @@ pub struct GameCompact {
     data: [Card; 52 + 4],
 }
 
+#[derive(Serialize)]
 pub struct Solver {
+    #[serde(skip_serializing)]
     original_game: Game,
+    random_seed: u32,
+    #[serde(skip_serializing)]
     visited_games_states: HashSet<GameCompact>,
+    #[serde(skip_serializing)]
     states_to_visit: Vec<(u32, Game)>,
     moves_made: Vec<Move>,
+    #[serde(skip_serializing)]
     culled_state_count: usize,
+    #[serde(skip_serializing)]
     game_overs_reached: usize,
 }
 
@@ -69,18 +78,16 @@ impl Solver {
         for valid_move in &valid_moves {
             states_to_visit.push((1, original_game.handle_move(valid_move)));
         }
+        let random_seed = original_game.random_seed;
         Self {
             original_game,
+            random_seed,
             visited_games_states,
             states_to_visit,
             moves_made: Vec::new(),
             culled_state_count: 0,
             game_overs_reached: 0,
         }
-    }
-
-    pub fn game_seed(&self) -> u32 {
-        self.original_game.random_seed
     }
 
     pub fn is_game_lost(valid_moves: &HashSet<Move>) -> bool {
@@ -161,10 +168,5 @@ impl Solver {
             }
         }
         None
-    }
-
-    pub fn print_solvable(&self) {
-        println!("game seed: {}", self.game_seed());
-        println!("moves: {:#?}", self.moves_made);
     }
 }

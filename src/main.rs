@@ -8,6 +8,7 @@ use mersenne_twister::MT19937;
 use moves::*;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
+use serde::Serialize;
 use solver::*;
 use std::{cmp::Ordering, fmt};
 
@@ -383,19 +384,22 @@ impl fmt::Display for Game {
     }
 }
 
+#[derive(Serialize)]
+struct SolvableGames {
+    solvers: Vec<Solver>,
+}
+
 fn main() {
     let num_iters = 20;
     let solvers = (0..num_iters)
         .into_par_iter()
-        .map(|_| {
-            let mut solver = Solver::new();
-            solver.is_solvable()
-        })
-        .filter_map(|game| game)
+        .map(|_| Solver::new().is_solvable())
+        .filter_map(|solver| solver)
         .collect::<Vec<_>>();
-    for solver in solvers {
-        solver.print_solvable()
-    }
+    let solvable_games = SolvableGames { solvers };
+    let json_string =
+        serde_json::to_string_pretty(&solvable_games).expect("could not create json string");
+    std::fs::write("solvable_games.json", &json_string).expect("could not write json file");
 }
 
 // TODO: Reduce symmetry in suit permutation

@@ -1,7 +1,9 @@
+use serde::Serialize;
+
 use crate::{card::*, Game};
 use std::{collections::HashSet, fmt};
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Serialize)]
 pub enum CardPosition {
     Stock,
     Waste,
@@ -10,7 +12,7 @@ pub enum CardPosition {
     Tableau((u8, u8)),
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Serialize)]
 pub struct Move {
     pub from: CardPosition,
     pub to: CardPosition,
