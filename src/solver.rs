@@ -114,7 +114,7 @@ impl Solver {
         }
     }
 
-    pub fn is_solvable(&mut self) -> Option<Game> {
+    pub fn is_solvable(mut self) -> Option<Self> {
         let cutoff_time = 5000.0;
         let timer = Instant::now();
         let mut current_depth = 0;
@@ -134,7 +134,7 @@ impl Solver {
             }
             if new_state.is_game_won() {
                 self.log_state(&new_state, true);
-                return Some(new_state);
+                return Some(self);
             }
             self.visited_games_states.insert(new_state.compact_state());
             let valid_moves = new_state.valid_moves();
@@ -161,5 +161,10 @@ impl Solver {
             }
         }
         None
+    }
+
+    pub fn print_solvable(&self) {
+        println!("game seed: {}", self.game_seed());
+        println!("moves: {:#?}", self.moves_made);
     }
 }

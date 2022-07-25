@@ -383,29 +383,19 @@ impl fmt::Display for Game {
     }
 }
 
-#[derive(Debug)]
-pub struct GameResult {
-    solvable: bool,
-    seed: u32,
-}
-
 fn main() {
-    let num_iters = 1000;
-    let games = (0..num_iters)
+    let num_iters = 20;
+    let solvers = (0..num_iters)
         .into_par_iter()
         .map(|_| {
             let mut solver = Solver::new();
-            let is_solvable = solver.is_solvable().is_some();
-            (is_solvable, solver.game_seed())
+            solver.is_solvable()
         })
+        .filter_map(|game| game)
         .collect::<Vec<_>>();
-    let won_games = games
-        .into_iter()
-        .filter(|(won, _)| *won)
-        .map(|(_, seed)| seed)
-        .collect::<Vec<_>>();
-    println!("{:#?}", won_games);
-    println!("% Won Games: {}", won_games.len() as f32 / num_iters as f32);
+    for solver in solvers {
+        solver.print_solvable()
+    }
 }
 
 // TODO: Reduce symmetry in suit permutation
