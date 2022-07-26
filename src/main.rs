@@ -44,7 +44,7 @@ impl<const CAP: usize> Ord for CardStack<CAP> {
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Game {
-    tableaus: [CardStack<18>; 7],
+    tableaus: [CardStack<20>; 7],
     first_unlocked_idx: [u8; 7],
     foundations: [Card; 4],
     foundation_stack: u64,
@@ -313,6 +313,7 @@ impl Game {
             .drain((card_idx as usize)..)
             .collect::<Vec<_>>();
 
+        // TODO: You are the problem!
         new_game.tableaus[to_index as usize].0.extend(drain_iter);
         new_game.tableaus[from_index as usize]
             .0
@@ -384,7 +385,7 @@ struct SolvableGames {
 }
 
 fn main() {
-    let num_iters = 100;
+    let num_iters = 10000;
     let solvers = (0..num_iters)
         .into_par_iter()
         .map(|_| Solver::new().is_solvable())
