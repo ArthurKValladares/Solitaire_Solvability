@@ -16,7 +16,7 @@ const VERBOSE_PRINT: bool = false;
 const DEBUG: bool = false;
 
 #[derive(Default, Debug, Clone, Hash, PartialEq, Eq)]
-pub struct CardStack<const CAP: usize>(ArrayVec<Card, CAP>);
+pub struct CardStack<const CAP: usize>(pub ArrayVec<Card, CAP>);
 
 impl<const CAP: usize> CardStack<CAP> {
     pub fn score(&self) -> u8 {
@@ -49,7 +49,7 @@ pub struct Game {
     foundations: [Card; 4],
     foundation_stack: u64,
     // TODO: Some optimizations in stock and waste
-    stock: CardStack<52>,
+    pub stock: CardStack<52>,
     waste: CardStack<52>,
     prev_move: Option<Move>,
     random_engine: MT19937,
@@ -246,7 +246,7 @@ impl Game {
             ) => self.move_stack_between_tableaus(*from_tableau_idx, *card_idx, *to_tableau_idx),
             _ => unreachable!(),
         };
-        game.prev_move = Some(mv.clone());
+        game.prev_move = Some(*mv);
         if DEBUG {
             game.validate()
         }
@@ -383,11 +383,6 @@ struct SolvableGames {
     solvers: Vec<Solver>,
 }
 
-#[derive(Serialize)]
-struct CompactSolvable {
-    seeds: Vec<u32>,
-}
-
 fn main() {
     let num_iters = 100;
     let solvers = (0..num_iters)
@@ -403,11 +398,12 @@ fn main() {
         }
     }
 
-    let seeds = solvers.iter().map(|solver| solver.random_seed).collect();
-    let compact_solvable = CompactSolvable { seeds };
-    let json_string =
-        serde_json::to_string_pretty(&compact_solvable).expect("could not create json string");
-    std::fs::write("compact_solvable_games.json", &json_string).expect("could not write json file");
+    let stocks = solvers
+        .iter()
+        .map(|solver| solver.original_stock())
+        .collect::<Vec<_>>();
+    std::fs::write("compact_solvable_games.txt", format!("{:?}", stocks))
+        .expect("could not write json file");
 
     let solvable_games = SolvableGames { solvers };
     let json_string =

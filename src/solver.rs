@@ -121,6 +121,10 @@ impl Solver {
         }
     }
 
+    pub fn original_stock(&self) -> &[Card] {
+        &self.original_game.stock.0
+    }
+    
     pub fn log_original_state(&self) {
         println!("{}", self.original_game);
     }
