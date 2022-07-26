@@ -38,14 +38,14 @@ impl IsCard for Card {
 pub const CLUBS_ACE: Card = 0;
 pub const CLUBS_KING: Card = 12;
 
-pub const DIAMONDS_ACE: Card = 13;
-pub const DIAMONDS_KING: Card = 25;
+pub const SPADES_ACE: Card = 13;
+pub const SPADES_KING: Card = 25;
 
-pub const SPADES_ACE: Card = 26;
-pub const SPADES_KING: Card = 38;
+pub const HEARTS_ACE: Card = 26;
+pub const HEARTS_KING: Card = 38;
 
-pub const HEARTS_ACE: Card = 39;
-pub const HEARTS_KING: Card = 51;
+pub const DIAMONDS_ACE: Card = 39;
+pub const DIAMONDS_KING: Card = 51;
 
 pub fn is_clubs(card: Card) -> bool {
     card.index() <= CLUBS_KING
